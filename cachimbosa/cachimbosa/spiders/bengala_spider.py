@@ -6,10 +6,19 @@ import re
 class BengalaShishaSpider(scrapy.Spider):
     name = 'bengala'
     start_urls = ["https://bengalaspain.com/es/cachimbas-3"]
+    aplicadosMetadatos = False
 
     def parse(self, response):
         shishas = response.css('div.js-product-miniature-wrapper')
         paginacion = response.css('nav.pagination ul li a.next')
+        if self.aplicadosMetadatos is False:
+            self.aplicadosMetadatos = True
+            yield {
+                'name': 'BengalaSpain',
+                'logo': response.css('div#desktop_logo a::attr(href)').get(
+                )[0:-1] + response.css('div#desktop_logo img.img-fluid::attr(src)').get()
+            }
+
         for shisha in shishas:
             thumbContainer = shisha.css('div.thumbnail-container')
             productDesc = shisha.css('div.product-description')

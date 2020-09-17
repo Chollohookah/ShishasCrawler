@@ -8,6 +8,10 @@ class MedusaSpider(scrapy.Spider):
     start_urls = ['https://www.medusashishashop.com/cachimbas/']
 
     def parse(self, response):
+        yield {
+            'name': 'Medusa',
+            'logo': response.css('img.header-logo::attr(data-src)').get()
+        }
         marcas = response.css('div.product-category a::attr(href)').getall()
         for marcaLink in marcas:
             peticionShishas = scrapy.Request(response.urljoin(
@@ -23,7 +27,6 @@ class MedusaSpider(scrapy.Spider):
                     shisha), callback=self.obtenerShishaDetalle)
                 peticionProducto.cb_kwargs['requestUrl'] = shisha
                 yield peticionProducto
-       
 
     def obtenerShishaDetalle(self, response, requestUrl):
         mainProduct = response.css('div.product-main')

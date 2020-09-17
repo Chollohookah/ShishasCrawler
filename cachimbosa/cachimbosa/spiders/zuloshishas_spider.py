@@ -5,8 +5,15 @@ import json
 class ZuloShishasPider(scrapy.Spider):
     name = 'zulo'
     start_urls = ['https://www.zuloshishas.es/cachimbas-3']
+    aplicadosMetadatos = False
 
     def parse(self, response):
+        if self.aplicadosMetadatos is False:
+            self.aplicadosMetadatos = True
+            yield {
+                'name': 'ZuloShishas',
+                'logo': response.css('a#header_logo img.logo::attr(src)').get()
+            }
         contenedorProducto = response.css('div.product-container')
         loopInfo = {
             'actualIndex': 0,

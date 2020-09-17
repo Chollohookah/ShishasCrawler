@@ -10,6 +10,10 @@ class HispaCachimbas(scrapy.Spider):
     def parse(self, response):
         cachimbas = response.css('div.product-thumb')
         enlaces = cachimbas.css('div.image a::attr(href)').getall()
+        yield {
+            'name':'Hispacachimbaa',
+            'logo':response.css('a#site_logo img::attr(src)').get()
+        }
         for enlace in enlaces:
             itemFinal = {
                 'linkProducto': enlace

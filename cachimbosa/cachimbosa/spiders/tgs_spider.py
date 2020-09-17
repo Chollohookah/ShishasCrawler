@@ -7,8 +7,15 @@ class TheGoodShishaSpider(scrapy.Spider):
     start_urls = ['https://www.thegoodshisha.com/product-category/shishas/']
     itemFinal = {}
     allShishasParsed = []
+    aplicadosMetadatos = False
 
     def parse(self, response):
+        if self.aplicadosMetadatos is False:
+            self.aplicadosMetadatos = True
+            yield {
+                'name': 'TheGoodShisha',
+                'logo': response.css('img.logo-img-sticky::attr(src)').get()
+            }
         shishas = response.css('div.product-list-item')
         botonRef = response.css(
             'a.pagination-item-next-link::attr(href)')
@@ -61,14 +68,14 @@ class TheGoodShishaSpider(scrapy.Spider):
         itemFinal['etiquetas'] = metadatosProducto.css(
             'span.tagged_as a[rel="tag"]::text').getall()
 
-        #self.allShishasParsed.append(itemFinal)
+        # self.allShishasParsed.append(itemFinal)
         yield itemFinal
         if self.loopInfo['actualIndex'] == (self.loopInfo['total'] - 1):
             if self.botonSiguiente is not None:
                 request = scrapy.Request(response.urljoin(
                     self.botonSiguiente), callback=self.parse)
                 yield request
-           
+
         self.loopInfo['actualIndex'] += 1
 
     def escribirJSON(self):
