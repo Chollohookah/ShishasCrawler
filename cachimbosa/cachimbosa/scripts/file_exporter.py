@@ -1,9 +1,13 @@
 import json
 import pymongo
+import sys
 
 
-env_var = input('Please enter database password \n')
 
+if len(sys.argv) == 1:
+	env_var = input('Please enter database password \n')
+else:
+	env_var = sys.argv[1]
 
 client = pymongo.MongoClient(
     "mongodb+srv://tsonyo:"+env_var+"@cluster0.7rz1o.mongodb.net/<dbname>?retryWrites=true&w=majority")
@@ -30,4 +34,4 @@ for nombreFichero in listaFicheros:
         minadasCol.insert_one(jsonGuardadoMongo)
 
 
-print("Exito insertando")
+print("[INFO] Exito insertando")
