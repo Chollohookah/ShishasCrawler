@@ -1,7 +1,7 @@
 import scrapy
 import json
 import re
-
+from time import gmtime, strftime
 
 class HispaCachimbas(scrapy.Spider):
     name = "hispacachimba"
@@ -12,7 +12,8 @@ class HispaCachimbas(scrapy.Spider):
         enlaces = cachimbas.css('div.image a::attr(href)').getall()
         yield {
             'name':'Hispacachimbaa',
-            'logo':response.css('a#site_logo img::attr(src)').get()
+            'logo':response.css('a#site_logo img::attr(src)').get(),
+            'lastUpdate':strftime("%Y-%m-%d %H:%M:%S", gmtime())
         }
         for enlace in enlaces:
             itemFinal = {

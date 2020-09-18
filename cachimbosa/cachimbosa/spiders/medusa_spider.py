@@ -1,7 +1,7 @@
 import scrapy
 import json
 import re
-
+from time import gmtime, strftime
 
 class MedusaSpider(scrapy.Spider):
     name = "medusa"
@@ -10,7 +10,8 @@ class MedusaSpider(scrapy.Spider):
     def parse(self, response):
         yield {
             'name': 'Medusa',
-            'logo': response.css('img.header-logo::attr(data-src)').get()
+            'logo': response.css('img.header-logo::attr(data-src)').get(),
+            'lastUpdate':strftime("%Y-%m-%d %H:%M:%S", gmtime())
         }
         marcas = response.css('div.product-category a::attr(href)').getall()
         for marcaLink in marcas:

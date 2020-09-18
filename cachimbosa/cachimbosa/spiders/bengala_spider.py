@@ -1,7 +1,7 @@
 import scrapy
 import json
 import re
-
+from time import gmtime, strftime
 
 class BengalaShishaSpider(scrapy.Spider):
     name = 'bengala'
@@ -16,7 +16,8 @@ class BengalaShishaSpider(scrapy.Spider):
             yield {
                 'name': 'BengalaSpain',
                 'logo': response.css('div#desktop_logo a::attr(href)').get(
-                )[0:-1] + response.css('div#desktop_logo img.img-fluid::attr(src)').get()
+                )[0:-1] + response.css('div#desktop_logo img.img-fluid::attr(src)').get(),
+                'lastUpdate':strftime("%Y-%m-%d %H:%M:%S", gmtime())
             }
 
         for shisha in shishas:

@@ -1,6 +1,6 @@
 import scrapy
 import json
-
+from time import gmtime, strftime
 
 class ZuloShishasPider(scrapy.Spider):
     name = 'zulo'
@@ -12,7 +12,8 @@ class ZuloShishasPider(scrapy.Spider):
             self.aplicadosMetadatos = True
             yield {
                 'name': 'ZuloShishas',
-                'logo': response.css('a#header_logo img.logo::attr(src)').get()
+                'logo': response.css('a#header_logo img.logo::attr(src)').get(),
+                'lastUpdate':strftime("%Y-%m-%d %H:%M:%S", gmtime())
             }
         contenedorProducto = response.css('div.product-container')
         loopInfo = {
