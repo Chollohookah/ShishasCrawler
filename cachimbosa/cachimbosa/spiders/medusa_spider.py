@@ -3,6 +3,7 @@ import json
 import re
 from time import gmtime, strftime
 
+
 class MedusaSpider(scrapy.Spider):
     name = "medusa"
     start_urls = ['https://www.medusashishashop.com/cachimbas/']
@@ -11,7 +12,7 @@ class MedusaSpider(scrapy.Spider):
         yield {
             'name': 'Medusa',
             'logo': response.css('img.header-logo::attr(data-src)').get(),
-            'lastUpdate':strftime("%Y-%m-%d %H:%M:%S", gmtime())
+            'lastUpdate': strftime("%Y-%m-%d %H:%M:%S", gmtime())
         }
         marcas = response.css('div.product-category a::attr(href)').getall()
         for marcaLink in marcas:
@@ -33,13 +34,14 @@ class MedusaSpider(scrapy.Spider):
         mainProduct = response.css('div.product-main')
         footerProduct = response.css('div.product-footer')
         titulo = mainProduct.css('h1.product-title::text')[0].get()
+
         precio = mainProduct.css(
             'span.woocommerce-Price-amount bdi::text')[0].get()
         divisa = mainProduct.css(
             'span.woocommerce-Price-amount bdi span::text')[0].get()
         imagen = mainProduct.css(
             '.woocommerce-product-gallery__image a::attr(href)').get()
-        marca = mainProduct.css('.woocommerce-breadcrumb a::text')[-1].get()
+        marca = mainProduct.css('.shop-page-title::text').get()
         informacionUnidades = re.findall(
             "\d+", mainProduct.css('p.in-stock::text')[0].get())
         etiquetas = footerProduct.css(
@@ -55,6 +57,7 @@ class MedusaSpider(scrapy.Spider):
         yield {
             'linkProducto': requestUrl,
             'titulo': titulo,
+            'shortDesc': response.css('div.product-short-description p::text').get(),
             'precioOriginal': precio,
             'precioRebajado': None,
             'divisa': divisa,

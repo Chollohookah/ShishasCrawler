@@ -1,11 +1,12 @@
+# -*- coding: utf-8 -*-
 import scrapy
 import json
 import re
 from time import gmtime, strftime
 
 class HispaCachimbas(scrapy.Spider):
-    name = "hispacachimba"
-    start_urls = ["https://www.hispacachimba.es/Cachimbas-Shishas"]
+    name = "hispacachimba1"
+    start_urls = ["https://www.hispacachimba.es/Cachimbas"]
 
     def parse(self, response):
         cachimbas = response.css('div.product-thumb')
@@ -23,6 +24,13 @@ class HispaCachimbas(scrapy.Spider):
                 enlace), callback=self.obtenerDetallShisha)
             peticionShishas.cb_kwargs['itemFinal'] = itemFinal
             yield peticionShishas
+        paginacionItems = response.css('div.pagination ul.links li a')
+        for paginacionHTMLA in paginacionItems:
+            if paginacionHTMLA.css('::text').get() == '>':
+                peticionMasShishas = scrapy.Request(
+                    response.urljoin(paginacionHTMLA.css('::attr(href)').get()), callback=self.parse
+                )
+                yield peticionMasShishas
 
     def obtenerDetallShisha(self, response, itemFinal):
         contenido = response.css('section#content')
@@ -40,7 +48,11 @@ class HispaCachimbas(scrapy.Spider):
             itemFinal['precioOriginal'] = self.obtenerPrecioJunto(
                 precioRegular)
             itemFinal['precioRebajado'] = None
-
+        fotosSinParsear = response.css('meta[property="og:image"]::attr(content)').getall()
+        for fotoSinParsear in fotosSinParsear:
+            fotoSinParsear = re.sub("((0|[1-9][0-9]*)x(0|[1-9][0-9]*))\w+","1050x1200",fotoSinParsear)
+        itemFinal['fotos'] = fotosSinParsear
+        itemFinal['shortDesc'] = self.cleanhtml(response.css('div.tb_product_description p')[0].get())
         itemFinal['divisa'] = (precioRegular if len(
             precioRegular) > 0 else precioNuevo).css('span.tb_currency::text').get()
         itemFinal['imagen'] = response.css(
@@ -69,3 +81,7 @@ class HispaCachimbas(scrapy.Spider):
             word for word in edit_string_as_list if word not in wordsToDelete]
         final_string = ' '.join(final_list)
         return final_string
+    def cleanhtml(self,raw_html):
+        cleanr = re.compile('<.*?>')
+        cleantext = re.sub(cleanr, '', raw_html)
+        return cleantext
