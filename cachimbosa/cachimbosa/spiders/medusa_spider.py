@@ -14,7 +14,8 @@ class MedusaSpider(scrapy.Spider):
             'logo': response.css('img.header-logo::attr(data-src)').get(),
             'lastUpdate': strftime("%Y-%m-%d %H:%M:%S", gmtime())
         }
-        marcas = response.css('div.product-category a::attr(href)').getall()
+        marcas = response.css(
+            'a[href*="https://www.medusashishashop.com/cachimbas/"]::attr(href)').getall()
         for marcaLink in marcas:
             peticionShishas = scrapy.Request(response.urljoin(
                 marcaLink), callback=self.obtenerShishas)
@@ -41,7 +42,8 @@ class MedusaSpider(scrapy.Spider):
             'span.woocommerce-Price-amount bdi span::text')[0].get()
         imagen = mainProduct.css(
             '.woocommerce-product-gallery__image a::attr(href)').get()
-        marca = mainProduct.css('.shop-page-title::text').get()
+        marca = response.css(
+            'nav.woocommerce-breadcrumb a::text').getall()[-1].lower()
         informacionUnidades = re.findall(
             "\d+", mainProduct.css('p.in-stock::text')[0].get())
         etiquetas = footerProduct.css(
@@ -56,15 +58,22 @@ class MedusaSpider(scrapy.Spider):
 
         yield {
             'linkProducto': requestUrl,
-            'titulo': titulo,
+            'titulo': titulo.strip(),
             'shortDesc': response.css('div.product-short-description p::text').get(),
             'precioOriginal': precio,
             'precioRebajado': None,
             'divisa': divisa,
             'imagen': imagen,
-            'marca': marca,
-            'modelo': titulo.lower(),
+            'marca': self.removeSpecificWordsFromString(marca.lower(), ['cachimba']).strip(),
+            'modelo': self.removeSpecificWordsFromString(titulo.lower(), ['cachimba'] + marca.split()).strip(),
             'agotado': False,
             'cantidad': cantidad,
             'categorias': ['cachimba'],
             'etiquetas': etiquetas}
+
+    def removeSpecificWordsFromString(self, string, wordsToDelete):
+        edit_string_as_list = string.split()
+        final_list = [
+            word for word in edit_string_as_list if word not in wordsToDelete]
+        final_string = ' '.join(final_list)
+        return final_string

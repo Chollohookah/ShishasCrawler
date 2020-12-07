@@ -15,7 +15,7 @@ class TheGoodShishaSpider(scrapy.Spider):
             self.aplicadosMetadatos = True
             yield {
                 'name': 'TheGoodShisha',
-                'logo': response.css('img.logo-img-sticky::attr(src)').get(),
+                'logo': response.css('link[rel="icon"][sizes="192x192"]::attr(href)').get(),
                 'lastUpdate': strftime("%Y-%m-%d %H:%M:%S", gmtime())
             }
         shishas = response.css('li.product')
@@ -79,6 +79,3 @@ class TheGoodShishaSpider(scrapy.Spider):
 
         self.loopInfo['actualIndex'] += 1
 
-    def escribirJSON(self):
-        with open(self.name+'.json', 'w', encoding='utf-8') as f:
-            json.dump(self.allShishasParsed, f, ensure_ascii=False, indent=4)

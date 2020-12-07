@@ -7,15 +7,18 @@ from time import gmtime, strftime
 class HispaCachimbas(scrapy.Spider):
     name = "hispacachimba1"
     start_urls = ["https://www.hispacachimba.es/Cachimbas"]
+    metadatosObtenidos = False
 
     def parse(self, response):
         cachimbas = response.css('div.product-thumb')
         enlaces = cachimbas.css('div.image a::attr(href)').getall()
-        yield {
-            'name':'Hispacachimbaa',
-            'logo':response.css('a#site_logo img::attr(src)').get(),
-            'lastUpdate':strftime("%Y-%m-%d %H:%M:%S", gmtime())
-        }
+        if self.metadatosObtenidos == False:
+            self.metadatosObtenidos = True
+            yield {
+                'name':'Hispacachimbaa',
+                'logo':response.css('a#site_logo img::attr(src)').get(),
+                'lastUpdate':strftime("%Y-%m-%d %H:%M:%S", gmtime())
+            }
         for enlace in enlaces:
             itemFinal = {
                 'linkProducto': enlace
@@ -52,15 +55,19 @@ class HispaCachimbas(scrapy.Spider):
         for fotoSinParsear in fotosSinParsear:
             fotoSinParsear = re.sub("((0|[1-9][0-9]*)x(0|[1-9][0-9]*))\w+","1050x1200",fotoSinParsear)
         itemFinal['fotos'] = fotosSinParsear
-        itemFinal['shortDesc'] = self.cleanhtml(response.css('div.tb_product_description p')[0].get())
+        
+        if len(response.css('div.tb_product_description p').getall()) > 0:
+            itemFinal['shortDesc'] = self.cleanhtml(response.css('div.tb_product_description p')[0].get())
+        else:
+            itemFinal['shortDesc'] = ''
         itemFinal['divisa'] = (precioRegular if len(
             precioRegular) > 0 else precioNuevo).css('span.tb_currency::text').get()
         itemFinal['imagen'] = response.css(
             'meta[name="twitter:image"]::attr(content)').get()
-        itemFinal['marca'] = itemFinal['imagen'].split("/")[6].upper()
+        itemFinal['marca'] = response.css('meta[property="product:brand"]::attr(content)').get().upper()
 
         itemFinal['modelo'] = self.removeSpecificWordsFromString(
-            itemFinal['titulo'].lower(), ['cachimba', itemFinal['marca'].lower()])
+            itemFinal['titulo'].lower(), ['cachimba']+itemFinal['marca'].lower().split()).strip()
         itemFinal['agotado'] = True if (contenido.css(
             'dl.dl-horizontal dd span::text').get().lower()) == 'en stock' else False
         itemFinal['cantidad'] = None
