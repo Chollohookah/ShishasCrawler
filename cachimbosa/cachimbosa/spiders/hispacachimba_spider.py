@@ -2,7 +2,9 @@
 import scrapy
 import json
 import re
+import unidecode
 from time import gmtime, strftime
+
 
 class HispaCachimbas(scrapy.Spider):
     name = "hispacachimba1"
@@ -15,9 +17,9 @@ class HispaCachimbas(scrapy.Spider):
         if self.metadatosObtenidos == False:
             self.metadatosObtenidos = True
             yield {
-                'name':'Hispacachimbaa',
-                'logo':response.css('a#site_logo img::attr(src)').get(),
-                'lastUpdate':strftime("%Y-%m-%d %H:%M:%S", gmtime())
+                'name': 'Hispacachimbaa',
+                'logo': response.css('a#site_logo img::attr(src)').get(),
+                'lastUpdate': strftime("%Y-%m-%d %H:%M:%S", gmtime())
             }
         for enlace in enlaces:
             itemFinal = {
@@ -51,28 +53,34 @@ class HispaCachimbas(scrapy.Spider):
             itemFinal['precioOriginal'] = self.obtenerPrecioJunto(
                 precioRegular)
             itemFinal['precioRebajado'] = None
-        fotosSinParsear = response.css('meta[property="og:image"]::attr(content)').getall()
+        fotosSinParsear = response.css(
+            'meta[property="og:image"]::attr(content)').getall()
         for fotoSinParsear in fotosSinParsear:
-            fotoSinParsear = re.sub("((0|[1-9][0-9]*)x(0|[1-9][0-9]*))\w+","1050x1200",fotoSinParsear)
+            fotoSinParsear = re.sub(
+                "((0|[1-9][0-9]*)x(0|[1-9][0-9]*))\w+", "1050x1200", fotoSinParsear)
         itemFinal['fotos'] = fotosSinParsear
-        
+
         if len(response.css('div.tb_product_description p').getall()) > 0:
-            itemFinal['shortDesc'] = self.cleanhtml(response.css('div.tb_product_description p')[0].get())
+            itemFinal['shortDesc'] = self.cleanhtml(
+                response.css('div.tb_product_description p')[0].get())
         else:
             itemFinal['shortDesc'] = ''
         itemFinal['divisa'] = (precioRegular if len(
             precioRegular) > 0 else precioNuevo).css('span.tb_currency::text').get()
         itemFinal['imagen'] = response.css(
-            'meta[name="twitter:image"]::attr(content)').get()
-        itemFinal['marca'] = response.css('meta[property="product:brand"]::attr(content)').get().upper()
 
-        itemFinal['modelo'] = self.removeSpecificWordsFromString(
-            itemFinal['titulo'].lower(), ['cachimba']+itemFinal['marca'].lower().split()).strip()
+            'meta[name="twitter:image"]::attr(content)').get()
+        itemFinal['marca'] = self.flattenString(self.removeSpecificWordsFromString(response.css(
+            'meta[property="product:brand"]::attr(content)').get().upper(), ['cachimba', 'shisha']))
+
+        itemFinal['modelo'] = self.flattenString(self.removeSpecificWordsFromString(
+            itemFinal['titulo'].lower(), ['cachimba']+itemFinal['marca'].lower().split())).strip()
         itemFinal['agotado'] = True if (contenido.css(
             'dl.dl-horizontal dd span::text').get().lower()) == 'en stock' else False
         itemFinal['cantidad'] = None
         itemFinal['categorias'] = ['cachimba']
-        itemFinal['etiquetas'] = contenido.css('ul.tb_tags li a::text').getall()
+        itemFinal['etiquetas'] = contenido.css(
+            'ul.tb_tags li a::text').getall()
         yield itemFinal
     # se le pasa el elemento price-old, price-new o price-regular
 
@@ -83,12 +91,26 @@ class HispaCachimbas(scrapy.Spider):
         return integer+decimalPoint+decimal
 
     def removeSpecificWordsFromString(self, string, wordsToDelete):
-        edit_string_as_list = string.split()
-        final_list = [
-            word for word in edit_string_as_list if word not in wordsToDelete]
-        final_string = ' '.join(final_list)
-        return final_string
-    def cleanhtml(self,raw_html):
+        if string is not None:
+            edit_string_as_list = string.lower().split()
+            final_list = [
+                word for word in edit_string_as_list if word not in wordsToDelete]
+            final_string = ' '.join(final_list)
+            return final_string
+        else:
+            return ""
+
+    def cleanhtml(self, raw_html):
         cleanr = re.compile('<.*?>')
         cleantext = re.sub(cleanr, '', raw_html)
         return cleantext
+
+    def flattenString(self, string):
+        string = string.upper()
+        string = string.replace(".", " ")
+        string = string.replace(",", " ")
+        string = string.replace("-", " ")
+        string = string.replace(" ", "")
+        string = string.strip()
+        string = unidecode.unidecode(string)
+        return string

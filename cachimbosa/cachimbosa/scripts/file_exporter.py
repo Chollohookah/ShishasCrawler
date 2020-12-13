@@ -11,12 +11,14 @@ else:
 
 client = pymongo.MongoClient(
     "mongodb+srv://tsonyo:"+env_var+"@cluster0.7rz1o.mongodb.net/<dbname>?retryWrites=true&w=majority")
-#client.drop_database('chollohooka')
+# client.drop_database('chollohooka')
 databaseChollohooka = client['chollohooka']
+databaseChollohookaPROD = client['chollohooka-PROD']
 
-erroresDeMinado = databaseChollohooka["errores"]
-minadasCol = databaseChollohooka["minadas"]
-blocksColection = databaseChollohooka['bloques']
+#erroresDeMinado = databaseChollohooka["errores"]
+#minadasCol = databaseChollohooka["minadas"]
+#hookasCol = databaseChollohooka["hookas"]
+#blocksColection = databaseChollohooka['bloques']
 
 listaFicheros = ['/home/ubuntu/data/bengalas.json', '/home/ubuntu/data/hispacachimba.json',
                  '/home/ubuntu/data/medusa.json', '/home/ubuntu/data/tgs.json', '/home/ubuntu/data/zuloshisha.json']
@@ -48,11 +50,16 @@ def comprobarValidezaMetadatos(metadataObj, nameSite):
 
 
 def addError(nombrePagina, mensajeError, tipo):
-    erroresDeMinado.insert_one(
-        {'pagina': nombrePagina, 'mensajeError': mensajeError, "tipo": tipo, 'date': datetime.now(), 'estado': 'NON_PROCESSED'})
-    print("["+tipo+"] - "+nombrePagina+" -"+mensajeError)
+    for database in ["chollohooka", "chollohooka-PROD"]:
+        client[database]["errores"].insert_one(
+            {'pagina': nombrePagina, 'mensajeError': mensajeError, "tipo": tipo, 'date': datetime.now(), 'estado': 'NON_PROCESSED'})
+        print("["+database+"]["+tipo+"] - "+nombrePagina+" -"+mensajeError)
 
-block = {"dateBlock":datetime.now(),"statuses":{},"minedIds":[]}
+
+block = {"dateBlock": datetime.now(), "statuses": {}}
+objetoIds = {"chollohooka": "", "chollohooka-PROD": ""}
+for database in ["chollohooka", "chollohooka-PROD"]:
+    objetoIds[database] = client[database]["bloques"].insert(block)
 for nombreFichero in listaFicheros:
     try:
         with open(nombreFichero, 'r') as ficheroJson:
@@ -69,24 +76,27 @@ for nombreFichero in listaFicheros:
                 muestraRandomDeDatos, nombrePag)
             objJSON.pop(0)
             if validezaDatos == True and validezaMetadatos == True:
-                jsonGuardadoMongo = {
-                    'lastUpdate': infoPagina['lastUpdate'],
-                    'lastUpdateMongo': datetime.now(),
-                    'name': infoPagina['name'],
-                    'logo': infoPagina['logo'],
-                    'data': objJSON
-                }
-                _id=minadasCol.insert(jsonGuardadoMongo)
-                block['statuses'].update({infoPagina['name'].lower():True})
-                block['minedIds'].append(_id)
+                for database in ["chollohooka", "chollohooka-PROD"]:
+                    site = {
+                        'lastUpdate': infoPagina['lastUpdate'],
+                        'lastUpdateMongo': datetime.now(),
+                        'name': infoPagina['name'],
+                        'logo': infoPagina['logo'],
+                        'blockId': objetoIds[database]
+                    }
+                    _id = client[database]["minadas"].insert(site)
+                    for cachimba in objJSON:
+                        cachimba['siteId'] = _id
+                    client[database]["hookas"].insert_many(objJSON)
+                    block['statuses'].update({infoPagina['name'].lower(): True})
             else:
-                block['statuses'].update({infoPagina['name'].lower():False})
-        
+                block['statuses'].update({infoPagina['name'].lower(): False})
+
     except Exception as e:
-      print(e)
-      
-      
-      
-blocksColection.insert_one(block)
+        print(e)
+print(block)
+for database in ["chollohooka", "chollohooka-PROD"]:
+    client[database]["bloques"].update({"_id": objetoIds[database]}, block)
+
 
 print("[INFO] Exito insertando")

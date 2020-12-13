@@ -3,6 +3,8 @@ import scrapy
 import re
 import json
 from time import gmtime, strftime
+import unidecode
+
 
 class ZuloShishasPider(scrapy.Spider):
     name = 'zulo'
@@ -15,7 +17,7 @@ class ZuloShishasPider(scrapy.Spider):
             yield {
                 'name': 'ZuloShishas',
                 'logo': response.css('a#header_logo img.logo::attr(src)').get(),
-                'lastUpdate':strftime("%Y-%m-%d %H:%M:%S", gmtime())
+                'lastUpdate': strftime("%Y-%m-%d %H:%M:%S", gmtime())
             }
         contenedorProducto = response.css('div.product-container')
         loopInfo = {
@@ -42,8 +44,10 @@ class ZuloShishasPider(scrapy.Spider):
         contenidoPrincipal = response.css('div.main_content_area')
         hayStock = self.hayStock(
             contenidoPrincipal.css('div#oosHook::attr(style)'))
-        fotosExtraShisha = response.css('#thumbs_list ul li a::attr(href)').getall()
-        descCorta = self.cleanhtml(response.css('#short_description_content p,strong::text').get())
+        fotosExtraShisha = response.css(
+            '#thumbs_list ul li a::attr(href)').getall()
+        descCorta = self.cleanhtml(response.css(
+            '#short_description_content p,strong::text').get())
 
         precioOriginal = contenidoPrincipal.css(
             'span#our_price_display::text').get()
@@ -52,9 +56,10 @@ class ZuloShishasPider(scrapy.Spider):
         itemFinal['fotos'] = fotosExtraShisha
         itemFinal['shortDesc'] = descCorta
         itemFinal['titulo'] = contenidoPrincipal.css('h1.heading::text').get()
-        itemFinal['modelo'] = contenidoPrincipal.css('h1.heading::text').get()
-        itemFinal['marca'] = contenidoPrincipal.css(
-            'a#product_manufacturer_logo meta::attr(content)').get()
+        itemFinal['modelo'] = self.flattenString(self.removeSpecificWordsFromString(
+            contenidoPrincipal.css('h1.heading::text').get(), ['cachimba', 'shisha']))
+        itemFinal['marca'] = self.flattenString(self.removeSpecificWordsFromString(contenidoPrincipal.css(
+            'a#product_manufacturer_logo meta::attr(content)').get(), ['cachimba', 'shisha']))
         itemFinal['imagen'] = contenidoPrincipal.css(
             'img#bigpic::attr(src)').get()
         itemFinal['divisa'] = precioOriginal.split(" ")[-1]
@@ -78,31 +83,39 @@ class ZuloShishasPider(scrapy.Spider):
 
         loopInfo['actualIndex'] += 1
 
-    def obtenerEspecificaciones(self,response):
-        #Indice par Key, indice inpar Valor
-        arrayEspecificaciones= response.css('#idTab2 table td::text').getall()
+    def obtenerEspecificaciones(self, response):
+        # Indice par Key, indice inpar Valor
+        arrayEspecificaciones = response.css('#idTab2 table td::text').getall()
         objEspecificaciones = {}
         for index, item in enumerate(arrayEspecificaciones):
             if item == 'Incluye cazoleta':
-                objEspecificaciones['cazoleta'] = True if (arrayEspecificaciones[(index+1)] == 'Sí') else False
+                objEspecificaciones['cazoleta'] = True if (
+                    arrayEspecificaciones[(index+1)] == 'Sí') else False
             elif item == 'Tamaño aprox.':
-                objEspecificaciones['tamanyo'] = arrayEspecificaciones[(index+1)]
+                objEspecificaciones['tamanyo'] = arrayEspecificaciones[(
+                    index+1)]
             elif item == 'Material principal':
-                objEspecificaciones['material'] = arrayEspecificaciones[(index+1)]
+                objEspecificaciones['material'] = arrayEspecificaciones[(
+                    index+1)]
             elif item == 'Tipo de cierre':
-                objEspecificaciones['cierre'] = arrayEspecificaciones[(index+1)]
+                objEspecificaciones['cierre'] = arrayEspecificaciones[(
+                    index+1)]
             elif item == 'Color predominante':
-                objEspecificaciones['color'] =arrayEspecificaciones[(index+1)]
+                objEspecificaciones['color'] = arrayEspecificaciones[(index+1)]
             elif item == 'Incluye base':
-                objEspecificaciones['incluyeBase'] = True if (arrayEspecificaciones[(index+1)] == 'Sí') else False
+                objEspecificaciones['incluyeBase'] = True if (
+                    arrayEspecificaciones[(index+1)] == 'Sí') else False
             elif item == 'Incluye manguera':
-                objEspecificaciones['incluyeManguera'] = True if (arrayEspecificaciones[(index+1)] == 'Sí') else False
+                objEspecificaciones['incluyeManguera'] = True if (
+                    arrayEspecificaciones[(index+1)] == 'Sí') else False
             elif item == 'Tipo':
                 objEspecificaciones['tipo'] = arrayEspecificaciones[(index+1)]
-            elif item =='Material':
-                objEspecificaciones['material'] = arrayEspecificaciones[(index+1)]
-            elif item =='Procedencia':
-                objEspecificaciones['procedencia'] = arrayEspecificaciones[(index+1)]
+            elif item == 'Material':
+                objEspecificaciones['material'] = arrayEspecificaciones[(
+                    index+1)]
+            elif item == 'Procedencia':
+                objEspecificaciones['procedencia'] = arrayEspecificaciones[(
+                    index+1)]
         return objEspecificaciones
 
     def hayStock(self, seleccionOOSstyle):
@@ -116,7 +129,27 @@ class ZuloShishasPider(scrapy.Spider):
             return False
         return True
 
-    def cleanhtml(self,raw_html):
+    def cleanhtml(self, raw_html):
         cleanr = re.compile('<.*?>')
         cleantext = re.sub(cleanr, '', raw_html)
         return cleantext
+
+    def removeSpecificWordsFromString(self, string, wordsToDelete):
+        if string is not None:
+            edit_string_as_list = string.lower().split()
+            final_list = [
+                word for word in edit_string_as_list if word not in wordsToDelete]
+            final_string = ' '.join(final_list)
+            return final_string
+        else:
+            return ""
+
+    def flattenString(self, string):
+        string = string.upper()
+        string = string.replace(".", " ")
+        string = string.replace(",", " ")
+        string = string.replace("-", " ")
+        string = string.replace(" ", "")
+        string = string.strip()
+        string = unidecode.unidecode(string)
+        return string
