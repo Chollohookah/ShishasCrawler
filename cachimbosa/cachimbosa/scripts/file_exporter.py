@@ -22,6 +22,7 @@ databaseChollohookaPROD = client['chollohooka-PROD']
 
 listaFicheros = ['/home/ubuntu/data/bengalas.json', '/home/ubuntu/data/hispacachimba.json',
                  '/home/ubuntu/data/medusa.json', '/home/ubuntu/data/tgs.json', '/home/ubuntu/data/zuloshisha.json']
+
 keysPermitidasParaSerNulas = ["preciorebajado", "cantidad", "shortdesc"]
 
 
@@ -58,8 +59,10 @@ def addError(nombrePagina, mensajeError, tipo):
 
 block = {"dateBlock": datetime.now(), "statuses": {}}
 objetoIds = {"chollohooka": "", "chollohooka-PROD": ""}
+
 for database in ["chollohooka", "chollohooka-PROD"]:
     objetoIds[database] = client[database]["bloques"].insert(block)
+
 for nombreFichero in listaFicheros:
     try:
         with open(nombreFichero, 'r') as ficheroJson:
@@ -94,9 +97,10 @@ for nombreFichero in listaFicheros:
 
     except Exception as e:
         print(e)
-print(block)
-for database in ["chollohooka", "chollohooka-PROD"]:
-    client[database]["bloques"].update({"_id": objetoIds[database]}, block)
+
+#Posible codigo muerto
+#for database in ["chollohooka", "chollohooka-PROD"]:
+#    client[database]["bloques"].update({"_id": objetoIds[database]}, block)
 
 
 print("[INFO] Exito insertando")
