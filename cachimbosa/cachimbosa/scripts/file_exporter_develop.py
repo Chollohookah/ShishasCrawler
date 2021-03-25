@@ -20,8 +20,8 @@ databaseChollohookaPROD = client['chollohooka-PROD']
 #hookasCol = databaseChollohooka["hookas"]
 #blocksColection = databaseChollohooka['bloques']
 
-listaFicheros = ['/home/ubuntu/data/bengalas.json', '/home/ubuntu/data/hispacachimba.json',
-                 '/home/ubuntu/data/medusa.json', '/home/ubuntu/data/tgs.json', '/home/ubuntu/data/zuloshisha.json']
+listaFicheros = ['/home/sportak/data/bengalas.json', '/home/sportak/data/hispacachimba.json',
+                 '/home/sportak/data/medusa.json', '/home/sportak/data/tgs.json', '/home/sportak/data/zuloshisha.json']
 
 keysPermitidasParaSerNulas = ["preciorebajado", "cantidad", "shortdesc"]
 
@@ -51,16 +51,16 @@ def comprobarValidezaMetadatos(metadataObj, nameSite):
 
 
 def addError(nombrePagina, mensajeError, tipo):
-    for database in ["chollohooka", "chollohooka-PROD"]:
+    for database in ["chollohooka"]:
         client[database]["errores"].insert_one(
             {'pagina': nombrePagina, 'mensajeError': mensajeError, "tipo": tipo, 'date': datetime.now(), 'estado': 'NON_PROCESSED'})
         print("["+database+"]["+tipo+"] - "+nombrePagina+" -"+mensajeError)
 
 
 block = {"dateBlock": datetime.now(), "statuses": {}}
-objetoIds = {"chollohooka": "", "chollohooka-PROD": ""}
+objetoIds = {"chollohooka": ""}
 
-for database in ["chollohooka", "chollohooka-PROD"]:
+for database in ["chollohooka"]:
     objetoIds[database] = client[database]["bloques"].insert(block)
 
 for nombreFichero in listaFicheros:
@@ -71,6 +71,7 @@ for nombreFichero in listaFicheros:
             objJSON = json.loads(data)
 
             infoPagina = objJSON[0]  # logo y nombre
+            print(infoPagina)
             nombrePag = infoPagina['name']
             muestraRandomDeDatos = objJSON[random.randint(1, len(objJSON)-1)]
             validezaMetadatos = comprobarValidezaMetadatos(
@@ -79,7 +80,7 @@ for nombreFichero in listaFicheros:
                 muestraRandomDeDatos, nombrePag)
             objJSON.pop(0)
             if validezaDatos == True and validezaMetadatos == True:
-                for database in ["chollohooka", "chollohooka-PROD"]:
+                for database in ["chollohooka"]:
                     site = {
                         'lastUpdate': infoPagina['lastUpdate'],
                         'lastUpdateMongo': datetime.now(),
