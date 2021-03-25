@@ -10,17 +10,22 @@ class HispaCachimbas(scrapy.Spider):
     name = "hispacachimba1"
     start_urls = ["https://www.hispacachimba.es/Cachimbas"]
     metadatosObtenidos = False
+    errorRequest = False
+    executingPagesRequests = False
 
     def parse(self, response):
-        cachimbas = response.css('div.product-thumb')
+        cachimbas = response.css('div#content div.product-grid')
         enlaces = cachimbas.css('div.image a::attr(href)').getall()
+        if len(enlaces) == 0:
+            self.errorRequest = True
         if self.metadatosObtenidos == False:
             self.metadatosObtenidos = True
             yield {
                 'name': 'Hispacachimbaa',
-                'logo': response.css('a#site_logo img::attr(src)').get(),
+                'logo': response.css('div#logo a img::attr(src)').get(),
                 'lastUpdate': strftime("%Y-%m-%d %H:%M:%S", gmtime())
             }
+
         for enlace in enlaces:
             itemFinal = {
                 'linkProducto': enlace
@@ -29,66 +34,62 @@ class HispaCachimbas(scrapy.Spider):
                 enlace), callback=self.obtenerDetallShisha)
             peticionShishas.cb_kwargs['itemFinal'] = itemFinal
             yield peticionShishas
-        paginacionItems = response.css('div.pagination ul.links li a')
-        for paginacionHTMLA in paginacionItems:
-            if paginacionHTMLA.css('::text').get() == '>':
-                peticionMasShishas = scrapy.Request(
-                    response.urljoin(paginacionHTMLA.css('::attr(href)').get()), callback=self.parse
-                )
-                yield peticionMasShishas
+
+        if self.executingPagesRequests == False:
+            indexWhile = 1
+            self.executingPagesRequests = True
+            while self.errorRequest == False and indexWhile < 100:
+                yield scrapy.Request(response.urljoin("https://www.hispacachimba.es/cachimbas/page/"+str(indexWhile)+"/"),callback=self.parse,errback=self.requestFailed)
+                indexWhile = indexWhile + 1
+
+        
+
+    def requestFailed(self):
+        self.errorRequest = True
 
     def obtenerDetallShisha(self, response, itemFinal):
-        contenido = response.css('section#content')
+        contenido = response.css('div#content')
         itemFinal['titulo'] = contenido.css(
-            'div.tb_system_page_title h1::text').get()
+            '.page-title::text').get()
         # En caso de que haya ofertas se diferencian con las siguientes clases
-        precioViejo = contenido.css('span.price-old')
-        precioNuevo = contenido.css('span.price-new')
-        precioRegular = contenido.css('span.price-regular')
+        precioViejo = contenido.css("#product div.product-price-old::text")
+        precioNuevo = contenido.css("#product div.product-price-new::text")
+        precioRegular = contenido.css('.price-group .product-price::text')
 
         if len(precioNuevo) > 0 and len(precioViejo) > 0:
-            itemFinal['precioOriginal'] = self.obtenerPrecioJunto(precioViejo)
-            itemFinal['precioRebajado'] = self.obtenerPrecioJunto(precioNuevo)
+            itemFinal['precioOriginal'] = precioViejo.get()[:-1]
+            itemFinal['precioRebajado'] = precioNuevo.get()[:-1]
         else:
-            itemFinal['precioOriginal'] = self.obtenerPrecioJunto(
-                precioRegular)
+            itemFinal['precioOriginal'] = precioRegular.get()[:-1]
             itemFinal['precioRebajado'] = None
+
         fotosSinParsear = response.css(
             'meta[property="og:image"]::attr(content)').getall()
+
         for fotoSinParsear in fotosSinParsear:
             fotoSinParsear = re.sub(
                 "((0|[1-9][0-9]*)x(0|[1-9][0-9]*))\w+", "1050x1200", fotoSinParsear)
         itemFinal['fotos'] = fotosSinParsear
 
-        if len(response.css('div.tb_product_description p').getall()) > 0:
-            itemFinal['shortDesc'] = self.cleanhtml(
-                response.css('div.tb_product_description p')[0].get())
-        else:
-            itemFinal['shortDesc'] = ''
-        itemFinal['divisa'] = (precioRegular if len(
-            precioRegular) > 0 else precioNuevo).css('span.tb_currency::text').get()
-        itemFinal['imagen'] = response.css(
+        itemFinal['shortDesc'] = response.css('meta[name="description"]::attr(content)').get()
 
+        itemFinal['divisa'] = (precioRegular if len(
+            precioRegular) > 0 else precioNuevo).get()[-1]
+
+        itemFinal['imagen'] = response.css(
             'meta[name="twitter:image"]::attr(content)').get()
-        itemFinal['marca'] = self.flattenString(self.removeSpecificWordsFromString(response.css(
-            'meta[property="product:brand"]::attr(content)').get().upper(), ['cachimba', 'shisha']))
+
+        itemFinal['marca'] = self.flattenString(self.removeSpecificWordsFromString(response.css('meta[property="og:image"]::attr(content)').get().split("/")[6].upper(), ['cachimba', 'shisha']))
 
         itemFinal['modelo'] = self.flattenString(self.removeSpecificWordsFromString(
             itemFinal['titulo'].lower(), ['cachimba']+itemFinal['marca'].lower().split())).strip()
+
         itemFinal['agotado'] = True if (contenido.css(
-            'dl.dl-horizontal dd span::text').get().lower()) == 'en stock' else False
+            'd#product .in-stock span::text').get()) is None else False
         itemFinal['cantidad'] = None
         itemFinal['categorias'] = ['cachimba']
-        itemFinal['etiquetas'] = contenido.css(
-            'ul.tb_tags li a::text').getall()
+        itemFinal['etiquetas'] = contenido.css('.tags a::text').getall()
         yield itemFinal
-    # se le pasa el elemento price-old, price-new o price-regular
-
-    def obtenerPrecioJunto(self, elemento):
-        integer = elemento.css('span.tb_integer::text').get()
-        decimalPoint = elemento.css('span.tb_decimal_point::text').get()
-        decimal = elemento.css('span.tb_decimal::text').get()
-        return integer+decimalPoint+decimal
 
     def removeSpecificWordsFromString(self, string, wordsToDelete):
         if string is not None:
