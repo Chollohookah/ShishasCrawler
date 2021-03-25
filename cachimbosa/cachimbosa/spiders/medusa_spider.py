@@ -37,16 +37,31 @@ class MedusaSpider(scrapy.Spider):
         footerProduct = response.css('div.product-footer')
         titulo = mainProduct.css('h1.product-title::text')[0].get()
 
-        precio = mainProduct.css(
-            'span.woocommerce-Price-amount bdi::text')[0].get()
+        precioRebajadoNode = mainProduct.css('p.price-on-sale')
+        precioRebajado = None
+        precio = None
+
+        if(len(precioRebajadoNode) > 0):
+            precio = mainProduct.css(
+                'p.price-on-sale del span bdi::text').get()
+            precioRebajado = mainProduct.css(
+                'p.price-on-sale ins span bdi::text').get()
+        else:
+            precio = mainProduct.css(
+                'span.woocommerce-Price-amount bdi::text')[0].get()
+
         divisa = mainProduct.css(
             'span.woocommerce-Price-amount bdi span::text')[0].get()
         imagen = mainProduct.css(
             '.woocommerce-product-gallery__image a::attr(href)').get()
         marca = response.css(
             'nav.woocommerce-breadcrumb a::text').getall()[-1].lower()
-        informacionUnidades = re.findall(
-            "\d+", mainProduct.css('p.in-stock::text')[0].get())
+
+        informacionUnidades = []
+        if len(mainProduct.css('p.in-stock::text')) > 0:
+            informacionUnidades = re.findall(
+                "\d+", mainProduct.css('p.in-stock::text')[0].get())
+
         etiquetas = footerProduct.css(
             'div.woocommerce-Tabs-panel ul li::text').getall()
         cantidad = 0
@@ -54,19 +69,20 @@ class MedusaSpider(scrapy.Spider):
         if len(informacionUnidades) > 0:
             cantidad = int(informacionUnidades[0])
         elif len(informacionUnidades) == 0:
-            cantidad = int(mainProduct.css(
-                'div.quantity input.qty::attr(max)')[0].get())
+            if len(mainProduct.css('div.quantity input.qty::attr(max)')) > 0:
+                cantidad = int(mainProduct.css(
+                    'div.quantity input.qty::attr(max)')[0].get())
 
         yield {
             'linkProducto': requestUrl,
             'titulo': titulo.strip(),
-            'shortDesc': response.css('div.product-short-description p::text').get(),
+            'shortDesc': "".join(response.css('div.product-short-description p:nth-child(1) *::text').getall()),
             'precioOriginal': precio,
-            'precioRebajado': None,
+            'precioRebajado': precioRebajado,
             'divisa': divisa,
             'imagen': imagen,
-            'marca': self.flattenString(self.removeSpecificWordsFromString(marca.lower(), ['cachimba','shisha'])).strip(),
-            'modelo': self.flattenString(self.removeSpecificWordsFromString(titulo.lower(), ['cachimba','shisha'] + marca.split())).strip(),
+            'marca': self.flattenString(self.removeSpecificWordsFromString(marca.lower(), ['cachimba', 'shisha'])).strip(),
+            'modelo': self.flattenString(self.removeSpecificWordsFromString(titulo.lower(), ['cachimba', 'shisha'] + marca.split())).strip(),
             'agotado': False,
             'cantidad': cantidad,
             'categorias': ['cachimba'],
@@ -82,7 +98,7 @@ class MedusaSpider(scrapy.Spider):
         else:
             return ""
 
-   def flattenString(self, string):
+    def flattenString(self, string):
         string = string.upper()
         string = string.replace(".", " ")
         string = string.replace(",", " ")
