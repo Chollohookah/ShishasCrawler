@@ -83,6 +83,7 @@ class BengalaShishaSpider(scrapy.Spider):
         itemFinal['agotado'] = True if len(contentWrapper.css(
             'button.add-to-cart::attr(disabled)')) > 0 else False
         itemFinal['cantidad'] = None
+        itemFinal['tipo'] = 'cachimba'
         itemFinal['categorias'] = ['cachimba']
         itemFinal['etiquetas'] = contentWrapper.css(
             'div#content-wrapper div.product-description div.rte-content strong::text').getall()

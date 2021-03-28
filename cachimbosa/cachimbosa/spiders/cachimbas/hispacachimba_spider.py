@@ -89,6 +89,7 @@ class HispaCachimbas(scrapy.Spider):
         itemFinal['cantidad'] = None
         itemFinal['categorias'] = ['cachimba']
         itemFinal['etiquetas'] = contenido.css('.tags a::text').getall()
+        itemFinal['tipo'] = 'cachimba'
         yield itemFinal
 
     def removeSpecificWordsFromString(self, string, wordsToDelete):

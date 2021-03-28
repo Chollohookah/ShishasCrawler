@@ -6,15 +6,15 @@ echo "" > /home/sportak/data/hispacachimba.json
 echo "" > /home/sportak/data/medusa.json
 echo "" > /home/sportak/data/tgs.json
 
-scrapy runspider cachimbosa/cachimbosa/spiders/zuloshishas_spider.py -o /home/sportak/data/zuloshisha.json
+scrapy runspider cachimbosa/cachimbosa/spiders/cachimbas/zuloshishas_spider.py -o /home/sportak/data/zuloshisha.json
 #sleep 1m
-scrapy runspider cachimbosa/cachimbosa/spiders/bengala_spider.py -o /home/sportak/data/bengalas.json
+scrapy runspider cachimbosa/cachimbosa/spiders/cachimbas/bengala_spider.py -o /home/sportak/data/bengalas.json
 #sleep 1m
-scrapy runspider cachimbosa/cachimbosa/spiders/hispacachimba_spider.py -o /home/sportak/data/hispacachimba.json
+scrapy runspider cachimbosa/cachimbosa/spiders/cachimbas/hispacachimba_spider.py -o /home/sportak/data/hispacachimba.json
 #sleep 1m
-scrapy runspider cachimbosa/cachimbosa/spiders/medusa_spider.py -o /home/sportak/data/medusa.json
+scrapy runspider cachimbosa/cachimbosa/spiders/cachimbas/medusa_spider.py -o /home/sportak/data/medusa.json
 #sleep 1m
-scrapy runspider cachimbosa/cachimbosa/spiders/tgs_spider.py -o /home/sportak/data/tgs.json
+scrapy runspider cachimbosa/cachimbosa/spiders/cachimbas/tgs_spider.py -o /home/sportak/data/tgs.json
 #sleep 1m
 
 

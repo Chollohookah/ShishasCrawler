@@ -69,7 +69,8 @@ class ZuloShishasPider(scrapy.Spider):
             precioRebajado) > 0 else None
         itemFinal['agotado'] = not hayStock
         itemFinal['cantidad'] = None
-        itemFinal['categorias'] = 'cachimba',
+        itemFinal['categorias'] = 'cachimba'
+        itemFinal['tipo'] = 'cachimba'
         itemFinal['etiquetas'] = contenidoPrincipal.css(
             'div#idTab211 div.pa_content a::text').getall()
         itemFinal['specs'] = self.obtenerEspecificaciones(response)

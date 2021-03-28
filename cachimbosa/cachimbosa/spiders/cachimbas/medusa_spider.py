@@ -81,6 +81,7 @@ class MedusaSpider(scrapy.Spider):
             'precioRebajado': precioRebajado,
             'divisa': divisa,
             'imagen': imagen,
+            'tipo':'cachimba'
             'marca': self.flattenString(self.removeSpecificWordsFromString(marca.lower(), ['cachimba', 'shisha'])).strip(),
             'modelo': self.flattenString(self.removeSpecificWordsFromString(titulo.lower(), ['cachimba', 'shisha'] + marca.split())).strip(),
             'agotado': False,

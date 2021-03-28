@@ -44,7 +44,8 @@ class TheGoodShishaSpider(scrapy.Spider):
                 'titulo': shisha.css('h2.woocommerce-loop-product__title::text').get(),
                 'divisa': shisha.css('span.woocommerce-Price-currencySymbol::text').get(),
                 'precioOriginal': precios[0].get(),
-                'precioRebajado': precios[1].get() if len(precios) > 1 else None
+                'precioRebajado': precios[1].get() if len(precios) > 1 else None,
+                'tipo':'cachimba'
             }
 
             if enlaceHref is not None:
