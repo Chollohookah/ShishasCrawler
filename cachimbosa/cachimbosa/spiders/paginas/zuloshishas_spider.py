@@ -8,7 +8,16 @@ import unidecode
 
 class ZuloShishasPider(scrapy.Spider):
     name = 'zulo'
-    start_urls = ['https://www.zuloshishas.es/cachimbas-3']
+    PAGINA_MAX = 100
+    URL_MANGUERAS = "https://www.zuloshishas.es/mangueras-cachimba-4"
+    URL_CAZOLETAS = "https://www.zuloshishas.es/cazoletas-cachimbas-5"
+    URL_CARBON = "https://www.zuloshishas.es/carbones-cachimba-6"
+    URL_CACHIMBAS = "https://www.zuloshishas.es/cachimbas-3"
+    URL_ESENCIAS = "https://www.zuloshishas.es/esencias-y-potenciadores-de-sabor-7"
+    URL_ACCESORIOS = "https://www.zuloshishas.es/accesorios-cachimba-8"
+
+    start_urls = [URL_MANGUERAS, URL_CAZOLETAS, URL_CARBON,
+                  URL_CACHIMBAS, URL_ESENCIAS, URL_ACCESORIOS]
     aplicadosMetadatos = False
 
     def parse(self, response):
@@ -19,28 +28,57 @@ class ZuloShishasPider(scrapy.Spider):
                 'logo': response.css('a#header_logo img.logo::attr(src)').get(),
                 'lastUpdate': strftime("%Y-%m-%d %H:%M:%S", gmtime())
             }
+
+        indexWhile = 1
+        while indexWhile < self.PAGINA_MAX:
+            peticionShishasPagina = None
+            if indexWhile == 1:
+                peticionShishasPagina = scrapy.Request(response.urljoin(
+                    response.url), callback=self.executeDescRequest)
+                peticionShishasPagina.cb_kwargs['typeItem'] = self.obtainTypeDependingOnUrlScrapped(
+                    response.url)
+            else:
+                peticionShishasPagina = scrapy.Request(response.urljoin(
+                    response.url+"?p="+str(indexWhile)), meta={
+                    'dont_redirect': True,
+                    'handle_httpstatus_list': [302, 301]
+                }, callback=self.executeDescRequest)
+                peticionShishasPagina.cb_kwargs['typeItem'] = self.obtainTypeDependingOnUrlScrapped(
+                    response.url)
+
+            yield peticionShishasPagina
+            indexWhile = indexWhile + 1
+
+    def obtainTypeDependingOnUrlScrapped(self, url):
+        if url == self.URL_CACHIMBAS:
+            return "cachimba"
+        elif url == self.URL_ESENCIAS:
+            return "esencias"
+        elif url == self.URL_CAZOLETAS:
+            return "cazoleta"
+        elif url == self.URL_ACCESORIOS:
+            return "accesorio"
+        elif url == self.URL_CARBON:
+            return "carbon"
+        elif url == self.URL_MANGUERAS:
+            return "manguera"
+
+    def executeDescRequest(self, response, typeItem):
         contenedorProducto = response.css('div.product-container')
-        loopInfo = {
-            'actualIndex': 0,
-            'total': len(contenedorProducto)
-        }
-        self.nextPageClass = response.css(
-            'li#pagination_next_bottom::attr(class)')
-        self.nextPageElement = response.css(
-            'li#pagination_next_bottom a::attr(href)')
-        for shisha in contenedorProducto:
+        if(len(contenedorProducto) > 0):
+            for shisha in contenedorProducto:
+                linkProducto = shisha.css(
+                    'a.product_img_link::attr(href)').get()
+                itemFinal = {
+                    'linkProducto': linkProducto,
+                    'tipo': typeItem
+                }
+                request = scrapy.Request(response.urljoin(
+                    linkProducto), callback=self.obtenerInfoProducto)
+                request.cb_kwargs['itemFinal'] = itemFinal
+                yield request
 
-            linkProducto = shisha.css('a.product_img_link::attr(href)').get()
-            itemFinal = {
-                'linkProducto': linkProducto
-            }
-            request = scrapy.Request(response.urljoin(
-                linkProducto), callback=self.obtenerInfoProducto)
-            request.cb_kwargs['itemFinal'] = itemFinal
-            request.cb_kwargs['loopInfo'] = loopInfo
-            yield request
-
-    def obtenerInfoProducto(self, response, itemFinal, loopInfo):
+    def obtenerInfoProducto(self, response, itemFinal):
         contenidoPrincipal = response.css('div.main_content_area')
         hayStock = self.hayStock(
             contenidoPrincipal.css('div#oosHook::attr(style)'))
@@ -57,9 +95,9 @@ class ZuloShishasPider(scrapy.Spider):
         itemFinal['shortDesc'] = descCorta
         itemFinal['titulo'] = contenidoPrincipal.css('h1.heading::text').get()
         itemFinal['modelo'] = self.flattenString(self.removeSpecificWordsFromString(
-            contenidoPrincipal.css('h1.heading::text').get(), ['cachimba', 'shisha']))
+            contenidoPrincipal.css('h1.heading::text').get(), ['cachimba', 'shisha', itemFinal['tipo']]))
         itemFinal['marca'] = self.flattenString(self.removeSpecificWordsFromString(contenidoPrincipal.css(
-            'a#product_manufacturer_logo meta::attr(content)').get(), ['cachimba', 'shisha']))
+            'a#product_manufacturer_logo meta::attr(content)').get(), ['cachimba', 'shisha', itemFinal['tipo']]))
         itemFinal['imagen'] = contenidoPrincipal.css(
             'img#bigpic::attr(src)').get()
         itemFinal['divisa'] = precioOriginal.split(" ")[-1]
@@ -69,20 +107,11 @@ class ZuloShishasPider(scrapy.Spider):
             precioRebajado) > 0 else None
         itemFinal['agotado'] = not hayStock
         itemFinal['cantidad'] = None
-        itemFinal['categorias'] = 'cachimba'
-        itemFinal['tipo'] = 'cachimba'
+        itemFinal['categorias'] = itemFinal['tipo']
         itemFinal['etiquetas'] = contenidoPrincipal.css(
             'div#idTab211 div.pa_content a::text').getall()
         itemFinal['specs'] = self.obtenerEspecificaciones(response)
         yield itemFinal
-
-        if loopInfo['actualIndex'] == (loopInfo['total'] - 1):
-            if self.haySiguiente(self.nextPageClass):
-                request = scrapy.Request(response.urljoin(
-                    self.nextPageElement.get()), callback=self.parse)
-                yield request
-
-        loopInfo['actualIndex'] += 1
 
     def obtenerEspecificaciones(self, response):
         # Indice par Key, indice inpar Valor
@@ -122,11 +151,6 @@ class ZuloShishasPider(scrapy.Spider):
     def hayStock(self, seleccionOOSstyle):
         style = seleccionOOSstyle.get()
         if style == "" or style == None or len(style) == 0:
-            return False
-        return True
-
-    def haySiguiente(self, botonSiguienteClass):
-        if "disabled" in botonSiguienteClass.get().split(" "):
             return False
         return True
 

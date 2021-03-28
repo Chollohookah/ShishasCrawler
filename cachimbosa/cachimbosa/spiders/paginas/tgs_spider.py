@@ -7,10 +7,17 @@ import unidecode
 
 class TheGoodShishaSpider(scrapy.Spider):
     name = "tgs"
-    start_urls = ['https://www.thegoodshisha.com/product-category/shishas/']
+    URL_CACHIMBAS = 'https://www.thegoodshisha.com/product-category/shishas/'
+    URL_CAZOLETAS = 'https://www.thegoodshisha.com/product-category/cazoletas/'
+    URL_MELAZAS = "https://www.thegoodshisha.com/product-category/carbones/"
+    URL_ACCESORIOS = "https://www.thegoodshisha.com/product-category/accesorios/"
+    URL_CARBON = "https://www.thegoodshisha.com/product-category/melazas/"
+    start_urls = [URL_CACHIMBAS, URL_CAZOLETAS,
+                  URL_MELAZAS, URL_ACCESORIOS, URL_CARBON]
     itemFinal = {}
     allShishasParsed = []
     aplicadosMetadatos = False
+    PAGINA_MAX = 100
 
     def parse(self, response):
         if self.aplicadosMetadatos is False:
@@ -20,39 +27,46 @@ class TheGoodShishaSpider(scrapy.Spider):
                 'logo': response.css('link[rel="icon"][sizes="192x192"]::attr(href)').get(),
                 'lastUpdate': strftime("%Y-%m-%d %H:%M:%S", gmtime())
             }
+
+        indexWhile = 1
+        while indexWhile < self.PAGINA_MAX:
+            peticionShishasPagina = None
+            if indexWhile == 1:
+                peticionShishasPagina = scrapy.Request(response.urljoin(
+                    response.url), callback=self.obtainInfoFromProductCard, method="GET", headers={"User-Agent": "Mozilla/5.0"})
+                peticionShishasPagina.cb_kwargs['typeItem'] = response.url
+            else:
+                peticionShishasPagina = scrapy.Request(response.urljoin(
+                    response.url+"page/"+str(indexWhile)+"/"), callback=self.obtainInfoFromProductCard, method="GET", headers={"User-Agent": "Mozilla/5.0"})
+                peticionShishasPagina.cb_kwargs['typeItem'] = response.url
+
+            yield peticionShishasPagina
+            indexWhile = indexWhile + 1
+
+    def obtainInfoFromProductCard(self, response, typeItem):
         shishas = response.css('li.product')
-        botonRef = response.css('a.next::attr(href)')
-        if botonRef is not None and len(botonRef) > 0:
-            self.botonSiguiente = botonRef[0].get()
-        else:
-            self.botonSiguiente = None
-        self.loopInfo = {
-            'actualIndex': 0,
-            'total': len(shishas)
-        }
+        if(len(shishas) > 0):
+            for shisha in shishas:
+                enlace = shisha.css("a.woocommerce-LoopProduct-link")
+                enlaceHref = enlace.css("::attr(href)").get()
+                precios = shisha.css('span.woocommerce-Price-amount bdi::text')
+                itemFinal = {
+                    'linkProducto': enlaceHref,
+                    'marca': self.flattenString(self.removeSpecificWordsFromString(enlaceHref.split("/")[-3].upper(), ['cachimba', 'shisha', typeItem])),
+                    'modelo': self.flattenString(self.removeSpecificWordsFromString(enlaceHref.split("/")[-2].upper(), ['cachimba', 'shisha', typeItem])),
+                    'imagen': enlace.css('img::attr(src)').get(),
+                    'titulo': shisha.css('h2.woocommerce-loop-product__title::text').get(),
+                    'divisa': shisha.css('span.woocommerce-Price-currencySymbol::text').get(),
+                    'precioOriginal': precios[0].get(),
+                    'precioRebajado': precios[1].get() if len(precios) > 1 else None,
+                    'tipo': self.obtainTypeDependingOnUrlScrapped(typeItem)
+                }
 
-        for shisha in shishas:
-            enlace = shisha.css("a.woocommerce-LoopProduct-link")
-            enlaceHref = enlace.css("::attr(href)").get()
-            precios = shisha.css('span.woocommerce-Price-amount bdi::text')
-           # shortDescYielded = ("".join(response.css('div.woocommerce-Tabs-panel--description p:nth-of-type(1) *::text').getall()))
-            itemFinal = {
-                'linkProducto': enlaceHref,
-                'marca': self.flattenString(self.removeSpecificWordsFromString(enlaceHref.split("/")[-3].upper(), ['cachimba', 'shisha'])),
-                'modelo': self.flattenString(self.removeSpecificWordsFromString(enlaceHref.split("/")[-2].upper(), ['cachimba', 'shisha'])),
-                'imagen': enlace.css('img::attr(src)').get(),
-                'titulo': shisha.css('h2.woocommerce-loop-product__title::text').get(),
-                'divisa': shisha.css('span.woocommerce-Price-currencySymbol::text').get(),
-                'precioOriginal': precios[0].get(),
-                'precioRebajado': precios[1].get() if len(precios) > 1 else None,
-                'tipo':'cachimba'
-            }
-
-            if enlaceHref is not None:
-                request = scrapy.Request(response.urljoin(
-                    enlaceHref), callback=self.obtenerInfoProducto, method="GET", headers={"User-Agent": "Mozilla/5.0"})
-                request.cb_kwargs['itemFinal'] = itemFinal
-                yield request
+                if enlaceHref is not None:
+                    request = scrapy.Request(response.urljoin(
+                        enlaceHref), callback=self.obtenerInfoProducto, method="GET", headers={"User-Agent": "Mozilla/5.0"})
+                    request.cb_kwargs['itemFinal'] = itemFinal
+                    yield request
 
     def obtenerInfoProducto(self, response, itemFinal):
         mainData = response.css('div.inside-article')
@@ -64,23 +78,14 @@ class TheGoodShishaSpider(scrapy.Spider):
             itemFinal['agotado'] = True
         else:
             itemFinal['agotado'] = False
-            # itemFinal['cantidad'] = cart.css('input.qty::attr(max)')[0].get()
+
         itemFinal['shortDesc'] = ("".join(response.css(
             'div.woocommerce-Tabs-panel--description p:nth-of-type(1) *::text').getall()))
         itemFinal['categorias'] = metadatosProducto.css(
             'span.posted_in a[rel="tag"]::text').getall()
         itemFinal['etiquetas'] = metadatosProducto.css(
             'span.tagged_as a[rel="tag"]::text').getall()
-
-        # self.allShishasParsed.append(itemFinal)
         yield itemFinal
-        if self.loopInfo['actualIndex'] == (self.loopInfo['total'] - 1):
-            if self.botonSiguiente is not None:
-                request = scrapy.Request(response.urljoin(
-                    self.botonSiguiente), callback=self.parse)
-                yield request
-
-        self.loopInfo['actualIndex'] += 1
 
     def removeSpecificWordsFromString(self, string, wordsToDelete):
         if string is not None:
@@ -101,3 +106,15 @@ class TheGoodShishaSpider(scrapy.Spider):
         string = string.strip()
         string = unidecode.unidecode(string)
         return string
+
+    def obtainTypeDependingOnUrlScrapped(self, url):
+        if url == self.URL_CACHIMBAS:
+            return "cachimba"
+        elif url == self.URL_CAZOLETAS:
+            return "cazoleta"
+        elif url == self.URL_ACCESORIOS:
+            return "accesorio"
+        elif url == self.URL_CARBON:
+            return "carbon"
+        elif url == self.URL_MELAZAS:
+            return "melaza"
