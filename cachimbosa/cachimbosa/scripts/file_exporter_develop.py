@@ -16,8 +16,8 @@ databaseChollohooka = client['chollohooka']
 databaseChollohookaPROD = client['chollohooka-PROD']
 
 #erroresDeMinado = databaseChollohooka["errores"]
-#minadasCol = databaseChollohooka["minadas"]
-#hookasCol = databaseChollohooka["hookas"]
+#minadasCol = databaseChollohooka["paginas"]
+#hookasCol = databaseChollohooka["items"]
 #blocksColection = databaseChollohooka['bloques']
 
 listaFicheros = ['/home/sportak/data/bengalas.json', '/home/sportak/data/hispacachimba.json',
@@ -88,10 +88,10 @@ for nombreFichero in listaFicheros:
                         'logo': infoPagina['logo'],
                         'blockId': objetoIds[database]
                     }
-                    _id = client[database]["minadas"].insert(site)
+                    _id = client[database]["paginas"].insert(site)
                     for cachimba in objJSON:
                         cachimba['siteId'] = _id
-                    client[database]["hookas"].insert_many(objJSON)
+                    client[database]["items"].insert_many(objJSON)
                     block['statuses'].update({infoPagina['name'].lower(): True})
                     client[database]["bloques"].update({"_id": objetoIds[database]}, block)
             else:

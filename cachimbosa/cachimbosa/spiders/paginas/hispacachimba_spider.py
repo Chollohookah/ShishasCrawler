@@ -18,6 +18,7 @@ class HispaCachimbas(scrapy.Spider):
         enlaces = cachimbas.css('div.image a::attr(href)').getall()
         if len(enlaces) == 0:
             self.errorRequest = True
+            
         if self.metadatosObtenidos == False:
             self.metadatosObtenidos = True
             yield {
