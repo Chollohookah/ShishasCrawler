@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import scrapy
 import json
 import re
@@ -7,91 +6,153 @@ from time import gmtime, strftime
 
 
 class HispaCachimbas(scrapy.Spider):
-    name = "hispacachimba1"
-    start_urls = ["https://www.hispacachimba.es/Cachimbas"]
+    name = 'hispacachimba1'
+
+    PAGINA_MAX = 100
+    URL_CACHIMBAS = 'https://www.hispacachimba.es/cachimbas/'
+    URL_CAZOLETAS = 'https://www.hispacachimba.es/cazoletas/'
+    URL_MANGUERAS = 'https://www.hispacachimba.es/mangueras/'
+    URL_ACCESORIOS = 'https://www.hispacachimba.es/accesorios/'
+    URL_CARBON = 'https://www.hispacachimba.es/carbones/'
+
+    start_urls = [URL_CAZOLETAS, URL_CACHIMBAS,
+                  URL_MANGUERAS, URL_ACCESORIOS, URL_CARBON]
+
     metadatosObtenidos = False
     errorRequest = False
     executingPagesRequests = False
 
     def parse(self, response):
-        cachimbas = response.css('div#content div.product-grid')
-        enlaces = cachimbas.css('div.image a::attr(href)').getall()
-        if len(enlaces) == 0:
-            self.errorRequest = True
-            
         if self.metadatosObtenidos == False:
-            self.metadatosObtenidos = True
             yield {
                 'name': 'Hispacachimbaa',
                 'logo': response.css('div#logo a img::attr(src)').get(),
                 'lastUpdate': strftime("%Y-%m-%d %H:%M:%S", gmtime())
             }
+            self.metadatosObtenidos = True
 
-        for enlace in enlaces:
-            itemFinal = {
-                'linkProducto': enlace
-            }
-            peticionShishas = scrapy.Request(response.urljoin(
-                enlace), callback=self.obtenerDetallShisha)
-            peticionShishas.cb_kwargs['itemFinal'] = itemFinal
-            yield peticionShishas
+        indexWhile = 1
 
-        if self.executingPagesRequests == False:
-            indexWhile = 1
-            self.executingPagesRequests = True
-            while self.errorRequest == False and indexWhile < 100:
-                yield scrapy.Request(response.urljoin("https://www.hispacachimba.es/cachimbas/page/"+str(indexWhile)+"/"),callback=self.parse,errback=self.requestFailed)
-                indexWhile = indexWhile + 1
+        while indexWhile < self.PAGINA_MAX:
+            if indexWhile == 1:
+                peticionPaginaProducto = scrapy.Request(response.urljoin(
+                    response.url), callback=self.executeDescRequest)
+                peticionPaginaProducto.cb_kwargs['typeItem'] = response.url
+            else:
+                peticionPaginaProducto = scrapy.Request(response.urljoin(
+                    response.url+'page/'+str(indexWhile)+'/'), callback=self.executeDescRequest)
+                peticionPaginaProducto.cb_kwargs['typeItem'] = response.url
 
-        
+            yield peticionPaginaProducto
+            indexWhile = indexWhile + 1
 
-    def requestFailed(self):
-        self.errorRequest = True
+    def executeDescRequest(self, response, typeItem):
+        productos = list(set(response.css(
+            'div.main-products div.product-layout div.product-thumb div.image a::attr(href)').getall()))
+        # print('\n \n Productos: ' + str(len(productos)) + '\n \n')
+        if(len(productos) > 0):
+            for producto in productos:
+                peticionProducto = scrapy.Request(response.urljoin(
+                    producto), callback=self.obtenerDetalleProducto)
+                peticionProducto.cb_kwargs['requestUrl'] = producto
+                peticionProducto.cb_kwargs['typeItem'] = self.obtainTypeDependingOnUrlScrapped(
+                    typeItem)
+                yield peticionProducto
 
-    def obtenerDetallShisha(self, response, itemFinal):
+    def obtainTypeDependingOnUrlScrapped(self, url):
+        if url == self.URL_CACHIMBAS:
+            return "cachimba"
+        elif url == self.URL_CAZOLETAS:
+            return "cazoleta"
+        elif url == self.URL_ACCESORIOS:
+            return "accesorio"
+        elif url == self.URL_CARBON:
+            return "carbon"
+        elif url == self.URL_MANGUERAS:
+            return "manguera"
+
+    def obtenerDetalleProducto(self, response, requestUrl, typeItem):
         contenido = response.css('div#content')
-        itemFinal['titulo'] = contenido.css(
-            '.page-title::text').get()
+        titulo = contenido.css('.page-title::text').get()
+
+        # PRECIOS
         # En caso de que haya ofertas se diferencian con las siguientes clases
         precioViejo = contenido.css("#product div.product-price-old::text")
         precioNuevo = contenido.css("#product div.product-price-new::text")
         precioRegular = contenido.css('.price-group .product-price::text')
 
+        precioOriginal = None
+        precioRebajado = None
         if len(precioNuevo) > 0 and len(precioViejo) > 0:
-            itemFinal['precioOriginal'] = precioViejo.get()[:-1]
-            itemFinal['precioRebajado'] = precioNuevo.get()[:-1]
+            precioOriginal = precioViejo.get()[:-1]
+            precioRebajado = precioNuevo.get()[:-1]
         else:
-            itemFinal['precioOriginal'] = precioRegular.get()[:-1]
-            itemFinal['precioRebajado'] = None
+            precioOriginal = precioRegular.get()[: -1]
+            precioRebajado = None
 
+        # FOTOS
         fotosSinParsear = response.css(
             'meta[property="og:image"]::attr(content)').getall()
 
         for fotoSinParsear in fotosSinParsear:
             fotoSinParsear = re.sub(
                 "((0|[1-9][0-9]*)x(0|[1-9][0-9]*))\w+", "1050x1200", fotoSinParsear)
-        itemFinal['fotos'] = fotosSinParsear
 
-        itemFinal['shortDesc'] = response.css('meta[name="description"]::attr(content)').get()
+        fotos = fotoSinParsear
 
-        itemFinal['divisa'] = (precioRegular if len(
+        # SHORT DESC
+        shortDesc = response.css(
+            'meta[name="description"]::attr(content)').get()
+
+        # DIVISA
+        divisa = (precioRegular if len(
             precioRegular) > 0 else precioNuevo).get()[-1]
 
-        itemFinal['imagen'] = response.css(
+        # IMAGEN
+        imagen = response.css(
             'meta[name="twitter:image"]::attr(content)').get()
 
-        itemFinal['marca'] = self.flattenString(self.removeSpecificWordsFromString(response.css('meta[property="og:image"]::attr(content)').get().split("/")[6].upper(), ['cachimba', 'shisha']))
+        # MARCA
+        marca = self.flattenString(self.removeSpecificWordsFromString(response.css(
+            'meta[property="og:image"]::attr(content)').get().split("/")[6].upper(), ['cachimba', 'shisha']))
 
-        itemFinal['modelo'] = self.flattenString(self.removeSpecificWordsFromString(
-            itemFinal['titulo'].lower(), ['cachimba']+itemFinal['marca'].lower().split())).strip()
+        # MODELO
+        modelo = self.flattenString(self.removeSpecificWordsFromString(
+            titulo.lower(), ['cachimba']+marca.lower().split())).strip()
 
-        itemFinal['agotado'] = True if (contenido.css(
+        # PRODUCTO AGOTADO
+        agotado = True if (contenido.css(
             'd#product .in-stock span::text').get()) is None else False
-        itemFinal['cantidad'] = None
-        itemFinal['categorias'] = ['cachimba']
-        itemFinal['etiquetas'] = contenido.css('.tags a::text').getall()
-        itemFinal['tipo'] = 'cachimba'
-        yield itemFinal
+
+        # CANTIDAD
+        cantidad = 0
+
+        # CATEGORIAS
+        categorias = [typeItem]
+
+        # ETIQUETAS
+        etiquetas = contenido.css('.tags a::text').getall()
+
+        # TIPO
+        tipo = typeItem
+
+        yield {
+            'linkProducto': requestUrl,
+            'titulo': titulo,
+            'shortDesc': shortDesc,
+            'precioOriginal': precioOriginal,
+            'precioRebajado': precioRebajado,
+            'divisa': divisa,
+            'imagen': imagen,
+            'tipo': tipo,
+            'fotos': fotos,
+            'marca': marca,
+            'modelo': modelo,
+            'agotado': agotado,
+            'cantidad': cantidad,
+            'categorias': categorias,
+            'etiquetas': etiquetas
+        }
 
     def removeSpecificWordsFromString(self, string, wordsToDelete):
         if string is not None:
@@ -102,11 +163,6 @@ class HispaCachimbas(scrapy.Spider):
             return final_string
         else:
             return ""
-
-    def cleanhtml(self, raw_html):
-        cleanr = re.compile('<.*?>')
-        cleantext = re.sub(cleanr, '', raw_html)
-        return cleantext
 
     def flattenString(self, string):
         string = string.upper()
