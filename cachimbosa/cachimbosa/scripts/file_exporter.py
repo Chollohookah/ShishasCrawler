@@ -25,6 +25,7 @@ listaFicheros = ['/home/ubuntu/data/bengalas.json', '/home/ubuntu/data/hispacach
 
 keysPermitidasParaSerNulas = ["preciorebajado", "cantidad", "shortdesc"]
 
+basesDeDatos = ["chollohooka", "chollohooka-PROD"]
 
 def isAllowedToBeNull(key):
     return key.lower() in keysPermitidasParaSerNulas
@@ -51,7 +52,7 @@ def comprobarValidezaMetadatos(metadataObj, nameSite):
 
 
 def addError(nombrePagina, mensajeError, tipo):
-    for database in ["chollohooka", "chollohooka-PROD"]:
+    for database in basesDeDatos:
         client[database]["errores"].insert_one(
             {'pagina': nombrePagina, 'mensajeError': mensajeError, "tipo": tipo, 'date': datetime.now(), 'estado': 'NON_PROCESSED'})
         print("["+database+"]["+tipo+"] - "+nombrePagina+" -"+mensajeError)
@@ -60,7 +61,7 @@ def addError(nombrePagina, mensajeError, tipo):
 block = {"dateBlock": datetime.now(), "statuses": {}}
 objetoIds = {"chollohooka": "", "chollohooka-PROD": ""}
 
-for database in ["chollohooka", "chollohooka-PROD"]:
+for database in basesDeDatos:
     objetoIds[database] = client[database]["bloques"].insert(block)
 
 for nombreFichero in listaFicheros:
@@ -79,7 +80,7 @@ for nombreFichero in listaFicheros:
                 muestraRandomDeDatos, nombrePag)
             objJSON.pop(0)
             if validezaDatos == True and validezaMetadatos == True:
-                for database in ["chollohooka", "chollohooka-PROD"]:
+                for database in basesDeDatos:
                     site = {
                         'lastUpdate': infoPagina['lastUpdate'],
                         'lastUpdateMongo': datetime.now(),

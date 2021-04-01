@@ -62,6 +62,8 @@ class ZuloShishasPider(scrapy.Spider):
             return "carbon"
         elif url == self.URL_MANGUERAS:
             return "manguera"
+        else:
+            return "otros"
 
     def executeDescRequest(self, response, typeItem):
         contenedorProducto = response.css('div.product-container')
@@ -107,7 +109,7 @@ class ZuloShishasPider(scrapy.Spider):
             precioRebajado) > 0 else None
         itemFinal['agotado'] = not hayStock
         itemFinal['cantidad'] = None
-        itemFinal['categorias'] = itemFinal['tipo']
+        itemFinal['categorias'] = [itemFinal['tipo']]
         itemFinal['etiquetas'] = contenidoPrincipal.css(
             'div#idTab211 div.pa_content a::text').getall()
         itemFinal['specs'] = self.obtenerEspecificaciones(response)

@@ -98,11 +98,10 @@ class HispaCachimbas(scrapy.Spider):
             fotoSinParsear = re.sub(
                 "((0|[1-9][0-9]*)x(0|[1-9][0-9]*))\w+", "1050x1200", fotoSinParsear)
 
-        fotos = fotoSinParsear
+        fotos = [fotoSinParsear]
 
         # SHORT DESC
-        shortDesc = response.css(
-            'meta[name="description"]::attr(content)').get()
+        shortDesc = "".join(contenido.css('div.block-content p:nth-child(1) *::text').getall())
 
         # DIVISA
         divisa = (precioRegular if len(
@@ -151,7 +150,10 @@ class HispaCachimbas(scrapy.Spider):
             'agotado': agotado,
             'cantidad': cantidad,
             'categorias': categorias,
-            'etiquetas': etiquetas
+            'etiquetas': etiquetas,
+            'specs':[{}],
+            'colores':[]
+
         }
 
     def removeSpecificWordsFromString(self, string, wordsToDelete):

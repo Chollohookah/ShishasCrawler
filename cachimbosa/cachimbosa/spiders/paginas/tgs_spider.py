@@ -59,6 +59,10 @@ class TheGoodShishaSpider(scrapy.Spider):
                     'divisa': shisha.css('span.woocommerce-Price-currencySymbol::text').get(),
                     'precioOriginal': precios[0].get(),
                     'precioRebajado': precios[1].get() if len(precios) > 1 else None,
+                    'colores': [],
+                    'fotos': [],
+                    'specs': [{}],
+                    'cantidad': None,
                     'tipo': self.obtainTypeDependingOnUrlScrapped(typeItem)
                 }
 

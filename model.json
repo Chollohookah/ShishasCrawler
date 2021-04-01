@@ -1,0 +1,89 @@
+{
+    "linkProducto": "https://www.medusashishashop.com/boquila-mr-shisha-carbon-mini-gold/",
+    "titulo": "Boquilla MR Shisha Carbon Mini Gold",
+    "shortDesc": "",
+    "precioOriginal": "14,96",
+    "precioRebajado": null,
+    "divisa": "\u20ac",
+    "imagen": "https://www.medusashishashop.com/wp-content/uploads/2020/09/Boquilla-Mr-Shisha-Carbon-Mini-Gold.jpg",
+    "tipo": "accesorio",
+    "fotos": [],
+    "colores":[],
+    "marca": "ACCESORIOS",
+    "modelo": "BOQUILLAMRCARBONMINIGOLD",
+    "agotado": false,
+    "cantidad": 0,
+    "categorias": ["accesorio"],
+    "etiquetas": [],
+    "specs":[{}]
+  }
+
+  {
+    "linkProducto": "https://bengalaspain.com/es/accesorios/punzon-werkbund-laucher-transformer-9204-",
+    "titulo": "PUNZ\u00d3N WERKBUND LAUCHER TRANSFORMER",
+    "precioOriginal": "19.95",
+    "precioRebajado": null,
+    "divisa": "\u20ac",
+    "tipo": "accesorio",
+    "categorias": ["accesorio"],
+    "imagen": "https://d3b8lkdhvdv3qm.cloudfront.net/31877-thickbox_default/punzon-werkbund-laucher-transformer.jpg",
+    "colores": [],
+    "shortDesc": "De los mejores herreros artesanales rusos nos llega\u00a0PUNZ\u00d3N\u00a0WERKBUND\u00a0LAUCHER TRANSFORMER.",
+    "fotos": [],
+    "specs": [{}],
+    "marca": "WERKBUND",
+    "modelo": "PUNZONLAUCHERTRANSFORMER",
+    "agotado": true,
+    "cantidad": null,
+    "etiquetas": []
+  }
+
+  {
+    "linkProducto": "https://www.thegoodshisha.com/tienda/shishas/vz/vz-hookah-pandora/",
+    "marca": "VZ",
+    "modelo": "VZHOOKAHPANDORA",
+    "imagen": "https://www.thegoodshisha.com/wp-content/uploads/2020/05/vz-pandora-300x300.jpeg",
+    "titulo": "VZ Hookah Pandora",
+    "divisa": "\u20ac",
+    "precioOriginal": "479.95",
+    "precioRebajado": null,
+    "tipo": "cachimba",
+    "agotado": false,
+    "shortDesc": "\u00a0VZ Hookah saca al mercado el nuevo modelo PANDORA. Es\u00a0una cachimba de\u00a0acero inoxidable\u00a0de una calidad suprema.Incluye:",
+    "categorias": ["SHISHAS", "VZ"],
+    "etiquetas": ["cachimba", "Narguile", "shisha", "vz hookah"]
+  },
+
+  {
+    "linkProducto": "https://www.zuloshishas.es/mangueras-cachimba/boquilla-3d-pokemon-jigglypuff-4633",
+    "tipo": "accesorio",
+    "fotos": [
+      "https://www.zuloshishas.es/18638-thickbox_default/boquilla-3d-pokemon-jigglypuff.jpg",
+      "https://www.zuloshishas.es/18636-thickbox_default/boquilla-3d-pokemon-jigglypuff.jpg"
+    ],
+    "shortDesc": "La Boquilla personal y reutilizable fabricada por 3D Acci\u00f3n es ideal para utilizar cuando vayas a fumar con amigos, ya sea en cualquier tipo de eventos, e incluso, cuando disfrutemos de cachimbas en bares...",
+    "titulo": "Boquilla Pok\u00e9mon Jigglypuff- 3D Acci\u00f3n",
+    "modelo": "BOQUILLAPOKEMONJIGGLYPUFF3DACCION",
+    "marca": "3DACCION",
+    "imagen": "https://www.zuloshishas.es/18638-large_default/boquilla-3d-pokemon-jigglypuff.jpg",
+    "divisa": "\u20ac",
+    "precioOriginal": "6,99",
+    "precioRebajado": null,
+    "agotado": false,
+    "cantidad": null,
+    "categorias": "accesorio",
+    "etiquetas": [
+      "Manguera",
+      "Boquilla",
+      "Accesorio",
+      "PVC",
+      "Rosa",
+      "Zulo Shishas",
+      "3D Acci\u00f3n"
+    ],
+    "specs": {
+      "tipo": "Moderno",
+      "material": "Pl\u00e1stico/PVC",
+      "procedencia": "Espa\u00f1a"
+    }
+  },

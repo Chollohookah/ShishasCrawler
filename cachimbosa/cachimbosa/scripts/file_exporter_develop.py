@@ -20,10 +20,12 @@ databaseChollohookaPROD = client['chollohooka-PROD']
 #hookasCol = databaseChollohooka["items"]
 #blocksColection = databaseChollohooka['bloques']
 
-listaFicheros = ['/home/sportak/data/bengalas.json', '/home/sportak/data/hispacachimba.json',
-                 '/home/sportak/data/medusa.json', '/home/sportak/data/tgs.json', '/home/sportak/data/zuloshisha.json']
-
+# listaFicheros = ['/home/sportak/data/bengalas.json', '/home/sportak/data/hispacachimba.json',
+# '/home/sportak/data/medusa.json', '/home/sportak/data/tgs.json', '/home/sportak/data/zuloshisha.json']
+listaFicheros = ['/home/sportak/data/medusa.json', '/home/sportak/data/tgs.json',
+                 '/home/sportak/data/bengalas.json', '/home/sportak/data/hispacachimba.json', '/home/sportak/data/zuloshisha.json']
 keysPermitidasParaSerNulas = ["preciorebajado", "cantidad", "shortdesc"]
+basesDeDatos = ["chollohooka"]
 
 
 def isAllowedToBeNull(key):
@@ -51,7 +53,7 @@ def comprobarValidezaMetadatos(metadataObj, nameSite):
 
 
 def addError(nombrePagina, mensajeError, tipo):
-    for database in ["chollohooka"]:
+    for database in basesDeDatos:
         client[database]["errores"].insert_one(
             {'pagina': nombrePagina, 'mensajeError': mensajeError, "tipo": tipo, 'date': datetime.now(), 'estado': 'NON_PROCESSED'})
         print("["+database+"]["+tipo+"] - "+nombrePagina+" -"+mensajeError)
@@ -60,7 +62,7 @@ def addError(nombrePagina, mensajeError, tipo):
 block = {"dateBlock": datetime.now(), "statuses": {}}
 objetoIds = {"chollohooka": ""}
 
-for database in ["chollohooka"]:
+for database in basesDeDatos:
     objetoIds[database] = client[database]["bloques"].insert(block)
 
 for nombreFichero in listaFicheros:
@@ -80,7 +82,7 @@ for nombreFichero in listaFicheros:
                 muestraRandomDeDatos, nombrePag)
             objJSON.pop(0)
             if validezaDatos == True and validezaMetadatos == True:
-                for database in ["chollohooka"]:
+                for database in basesDeDatos:
                     site = {
                         'lastUpdate': infoPagina['lastUpdate'],
                         'lastUpdateMongo': datetime.now(),
@@ -92,11 +94,14 @@ for nombreFichero in listaFicheros:
                     for cachimba in objJSON:
                         cachimba['siteId'] = _id
                     client[database]["items"].insert_many(objJSON)
-                    block['statuses'].update({infoPagina['name'].lower(): True})
-                    client[database]["bloques"].update({"_id": objetoIds[database]}, block)
+                    block['statuses'].update(
+                        {infoPagina['name'].lower(): True})
+                    client[database]["bloques"].update(
+                        {"_id": objetoIds[database]}, block)
             else:
                 block['statuses'].update({infoPagina['name'].lower(): False})
-                client[database]["bloques"].update({"_id": objetoIds[database]}, block)
+                client[database]["bloques"].update(
+                    {"_id": objetoIds[database]}, block)
 
     except Exception as e:
         print(e)
