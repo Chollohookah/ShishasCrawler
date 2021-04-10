@@ -29,8 +29,6 @@ class MedusaSpider(scrapy.Spider):
             self.metadata_set = True
 
         indexWhile = 1
-
-        validPage = True
         while indexWhile < self.PAGINA_MAX:
             peticionShishasPagina = None
             if indexWhile == 1:
