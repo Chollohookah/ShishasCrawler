@@ -5,18 +5,18 @@ import unidecode
 from time import gmtime, strftime
 
 
-class HispaCachimbas(scrapy.Spider):
-    name = 'hispacachimba1'
+class Bakkali(scrapy.Spider):
+    name = "bakkali"
 
     PAGINA_MAX = 100
-    URL_CACHIMBAS = 'https://www.hispacachimba.es/cachimbas/'
-    URL_CAZOLETAS = 'https://www.hispacachimba.es/cazoletas/'
-    URL_MANGUERAS = 'https://www.hispacachimba.es/mangueras/'
-    URL_ACCESORIOS = 'https://www.hispacachimba.es/accesorios/'
-    URL_CARBON = 'https://www.hispacachimba.es/carbones/'
+    URL_CACHIMBAS = 'https://bakkalistore.es/cachimbas/'
+    URL_CAZOLETAS = 'https://bakkalistore.es/cazoletas/'
+    URL_ACCESORIOS = 'https://bakkalistore.es/accesorios/'
+    URL_CONSUMIBLES = 'https://bakkalistore.es/consumibles/'
+    URL_BASES = 'https://bakkalistore.es/bases/'
 
-    start_urls = [URL_CAZOLETAS, URL_CACHIMBAS,
-                  URL_MANGUERAS, URL_ACCESORIOS, URL_CARBON]
+    start_urls = [URL_CACHIMBAS, URL_CAZOLETAS,
+                  URL_ACCESORIOS, URL_CONSUMIBLES, URL_BASES]
 
     metadatosObtenidos = False
     errorRequest = False
@@ -25,8 +25,8 @@ class HispaCachimbas(scrapy.Spider):
     def parse(self, response):
         if self.metadatosObtenidos == False:
             yield {
-                'name': 'Hispacachimbaa',
-                'logo': response.css('div#logo a img::attr(src)').get(),
+                'name': 'Bakkali',
+                'logo': response.css('div#desktop_logo a img::attr(src)').get(),
                 'lastUpdate': strftime("%Y-%m-%d %H:%M:%S", gmtime())
             }
             self.metadatosObtenidos = True
@@ -40,7 +40,7 @@ class HispaCachimbas(scrapy.Spider):
                 peticionPaginaProducto.cb_kwargs['typeItem'] = response.url
             else:
                 peticionPaginaProducto = scrapy.Request(response.urljoin(
-                    response.url+'page/'+str(indexWhile)+'/'), callback=self.executeDescRequest)
+                    response.url+'?page='+str(indexWhile)+'/'), callback=self.executeDescRequest)
                 peticionPaginaProducto.cb_kwargs['typeItem'] = response.url
 
             yield peticionPaginaProducto
@@ -48,7 +48,7 @@ class HispaCachimbas(scrapy.Spider):
 
     def executeDescRequest(self, response, typeItem):
         productos = list(set(response.css(
-            'div.main-products div.product-layout div.product-thumb div.image a::attr(href)').getall()))
+            'article.product-miniature div.thumbnail-container a::attr(href)').getall()))
         # print('\n \n Productos: ' + str(len(productos)) + '\n \n')
         if(len(productos) > 0):
             for producto in productos:
@@ -66,64 +66,76 @@ class HispaCachimbas(scrapy.Spider):
             return "cazoleta"
         elif url == self.URL_ACCESORIOS:
             return "accesorio"
-        elif url == self.URL_CARBON:
-            return "carbon"
-        elif url == self.URL_MANGUERAS:
-            return "manguera"
+        elif url == self.URL_CONSUMIBLES:
+            return "consumible"
+        elif url == self.URL_BASES:
+            return "base"
 
     def obtenerDetalleProducto(self, response, requestUrl, typeItem):
-        contenido = response.css('div#content')
-        titulo = contenido.css('.page-title::text').get()
+        infoProducto = response.css('div.product-info-row')
+        titulo = infoProducto.css('.page-title span::text').get()
 
         # PRECIOS
         # En caso de que haya ofertas se diferencian con las siguientes clases
-        precioViejo = contenido.css("#product div.product-price-old::text")
-        precioNuevo = contenido.css("#product div.product-price-new::text")
-        precioRegular = contenido.css('.price-group .product-price::text')
+        precioNuevo = infoProducto.css(
+            'span.current-price span::attr(content)').get()
+
+        precioMayorACero = infoProducto.css('span.regular-price::text').get()
+
+        precioRegular = precioMayorACero if precioMayorACero else '0,00€'
 
         precioOriginal = None
         precioRebajado = None
-        if len(precioNuevo) > 0 and len(precioViejo) > 0:
-            precioOriginal = precioViejo.get()[:-1]
-            precioRebajado = precioNuevo.get()[:-1]
+
+        if precioNuevo and precioRegular:
+
+            if len(precioNuevo) > 0 and len(precioRegular) > 0:
+                precioOriginal = precioRegular.replace(
+                    '€', '').replace('\u00a0', '')
+                precioRebajado = precioNuevo.replace('€', '')
         else:
-            precioOriginal = precioRegular.get()[: -1]
+            precioOriginal = precioNuevo.replace('€', '')
             precioRebajado = None
 
         # FOTOS
-        fotosSinParsear = response.css(
-            'meta[property="og:image"]::attr(content)').getall()
-
-        for fotoSinParsear in fotosSinParsear:
-            fotoSinParsear = re.sub(
-                "((0|[1-9][0-9]*)x(0|[1-9][0-9]*))\w+", "1050x1200", fotoSinParsear)
-
-        fotos = fotoSinParsear
+        fotos = infoProducto.css(
+            'div.product-images img.js-thumb::attr(src)').getall()
 
         # SHORT DESC
         shortDesc = response.css(
             'meta[name="description"]::attr(content)').get()
 
         # DIVISA
-        divisa = (precioRegular if len(
-            precioRegular) > 0 else precioNuevo).get()[-1]
-
+        if precioRegular:
+            divisa = (precioRegular if len(
+                precioRegular) > 0 else precioOriginal)[-1]
+        else:
+            divisa = '0,00'
         # IMAGEN
         imagen = response.css(
-            'meta[name="twitter:image"]::attr(content)').get()
+            'meta[property="og:image"]::attr(content)').get()
 
         # MARCA
-        # TODO Pensar otra manera de pillar la marca, esta a veces falla porque no todas las url tienen 6 "/"
-        marca = self.flattenString(self.removeSpecificWordsFromString(response.css(
-            'meta[property="og:image"]::attr(content)').get().split("/")[6].upper(), ['cachimba', 'shisha']))
+        marca_sin_modificar = response.css(
+            'meta[itemprop="brand"]::attr(content)').get()
 
+        # TODO: Hay algunas que no tienen el meta brand, hay que pensar una alternativa
+        marca = self.flattenString(self.removeSpecificWordsFromString(response.css(
+            'meta[itemprop="brand"]::attr(content)').get().upper(), ['cachimba', 'shisha'])) if marca_sin_modificar else typeItem
+
+        # TODO: Por qué se juntan todas las palabras del modelo??
         # MODELO
         modelo = self.flattenString(self.removeSpecificWordsFromString(
             titulo.lower(), ['cachimba']+marca.lower().split())).strip()
 
         # PRODUCTO AGOTADO
-        agotado = True if (contenido.css(
-            'd#product .in-stock span::text').get()) is None else False
+        wrapper_nodo = response.css('#product-availability::text').getall()
+        agotado = False
+        if any('Fuera de stock' in s for s in wrapper_nodo):
+            agotado = True
+
+        # agotado = True if (contenido.css(
+        #   '#product-availability::text').get()) is None else False
 
         # CANTIDAD
         cantidad = 0
@@ -132,7 +144,7 @@ class HispaCachimbas(scrapy.Spider):
         categorias = [typeItem]
 
         # ETIQUETAS
-        etiquetas = contenido.css('.tags a::text').getall()
+        etiquetas = ''
 
         # TIPO
         tipo = typeItem
