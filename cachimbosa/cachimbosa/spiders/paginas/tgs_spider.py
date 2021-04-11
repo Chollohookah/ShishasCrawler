@@ -3,6 +3,7 @@ import json
 from time import gmtime, strftime
 import time
 import unidecode
+from utils import Utils
 
 
 class TheGoodShishaSpider(scrapy.Spider):
@@ -52,8 +53,8 @@ class TheGoodShishaSpider(scrapy.Spider):
                 precios = shisha.css('span.woocommerce-Price-amount bdi::text')
                 itemFinal = {
                     'linkProducto': enlaceHref,
-                    'marca': self.flattenString(self.removeSpecificWordsFromString(enlaceHref.split("/")[-3].upper(), ['cachimba', 'shisha', typeItem])),
-                    'modelo': self.flattenString(self.removeSpecificWordsFromString(enlaceHref.split("/")[-2].upper(), ['cachimba', 'shisha', typeItem])),
+                    'marca': Utils.flattenString(self, Utils.removeSpecificWordsFromString(self, enlaceHref.split("/")[-3].upper(), ['cachimba', 'shisha', typeItem])),
+                    'modelo': Utils.flattenString(self, Utils.removeSpecificWordsFromString(self, enlaceHref.split("/")[-2].upper(), ['cachimba', 'shisha', typeItem])),
                     'imagen': enlace.css('img::attr(src)').get(),
                     'titulo': shisha.css('h2.woocommerce-loop-product__title::text').get(),
                     'divisa': shisha.css('span.woocommerce-Price-currencySymbol::text').get(),
@@ -90,26 +91,6 @@ class TheGoodShishaSpider(scrapy.Spider):
         itemFinal['etiquetas'] = metadatosProducto.css(
             'span.tagged_as a[rel="tag"]::text').getall()
         yield itemFinal
-
-    def removeSpecificWordsFromString(self, string, wordsToDelete):
-        if string is not None:
-            edit_string_as_list = string.lower().split()
-            final_list = [
-                word for word in edit_string_as_list if word not in wordsToDelete]
-            final_string = ' '.join(final_list)
-            return final_string
-        else:
-            return ""
-
-    def flattenString(self, string):
-        string = string.upper()
-        string = string.replace(".", " ")
-        string = string.replace(",", " ")
-        string = string.replace("-", " ")
-        string = string.replace(" ", "")
-        string = string.strip()
-        string = unidecode.unidecode(string)
-        return string
 
     def obtainTypeDependingOnUrlScrapped(self, url):
         if url == self.URL_CACHIMBAS:

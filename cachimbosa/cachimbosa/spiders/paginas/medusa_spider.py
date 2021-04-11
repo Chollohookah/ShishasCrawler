@@ -3,6 +3,7 @@ import json
 import re
 from time import gmtime, strftime
 import unidecode
+from utils import Utils
 
 
 class MedusaSpider(scrapy.Spider):
@@ -120,29 +121,9 @@ class MedusaSpider(scrapy.Spider):
                 'specs': [{}],
                 'colores': [],
                 'fotos': mainProduct.css('.product-thumbnails div.col a img::attr(data-src)').getall(),
-                'marca': self.flattenString(self.removeSpecificWordsFromString(marca.lower(), ['cachimba', 'shisha', typeItem])).strip(),
-                'modelo': self.flattenString(self.removeSpecificWordsFromString(titulo.lower(), ['cachimba', 'shisha', typeItem] + marca.split())).strip(),
+                'marca': Utils.flattenString(self, Utils.removeSpecificWordsFromString(self, marca.lower(), ['cachimba', 'shisha', typeItem])).strip(),
+                'modelo': Utils.flattenString(self, Utils.removeSpecificWordsFromString(self, titulo.lower(), ['cachimba', 'shisha', typeItem] + marca.split())).strip(),
                 'agotado': False,
                 'cantidad': cantidad,
                 'categorias': [typeItem],
                 'etiquetas': etiquetas}
-
-    def removeSpecificWordsFromString(self, string, wordsToDelete):
-        if string is not None:
-            edit_string_as_list = string.lower().split()
-            final_list = [
-                word for word in edit_string_as_list if word not in wordsToDelete]
-            final_string = ' '.join(final_list)
-            return final_string
-        else:
-            return ""
-
-    def flattenString(self, string):
-        string = string.upper()
-        string = string.replace(".", " ")
-        string = string.replace(",", " ")
-        string = string.replace("-", " ")
-        string = string.replace(" ", "")
-        string = string.strip()
-        string = unidecode.unidecode(string)
-        return string
