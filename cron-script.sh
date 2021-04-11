@@ -29,7 +29,7 @@ fi
 echo "[Success] scrawl multiple exitoso"
 echo "[INFO] iniciando subida base de datos"
 
-python3 /home/ubuntu/ShishasCrawler/cachimbosa/cachimbosa/scripts/file_exporter.py "10052001Tsonyo"
+python3 /home/ubuntu/ShishasCrawler/cachimbosa/cachimbosa/scripts/file_exporter.py $1
 
 if [ "$?" != "0" ]; then
         echo "[Error] Guardado en base de datos fallado"

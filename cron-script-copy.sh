@@ -1,23 +1,23 @@
 #!/bin/bash
 
-echo "" > /home/sportak/data/zuloshisha.json
-echo "" > /home/sportak/data/bengalas.json
-echo "" > /home/sportak/data/hispacachimba.json
-echo "" > /home/sportak/data/medusa.json
-echo "" > /home/sportak/data/tgs.json
-echo "" > /home/sportak/data/bakkali.json
+echo "" > $HOME/data/zuloshisha.json
+echo "" > $HOME/data/bengalas.json
+echo "" > $HOME/data/hispacachimba.json
+echo "" > $HOME/data/medusa.json
+echo "" > $HOME/data/tgs.json
+echo "" > $HOME/data/bakkali.json
 
-scrapy runspider cachimbosa/cachimbosa/spiders/paginas/zuloshishas_spider.py -o /home/sportak/data/zuloshisha.json
+scrapy runspider cachimbosa/cachimbosa/spiders/paginas/zuloshishas_spider.py -o $HOME/data/zuloshisha.json
 #sleep 1m
-scrapy runspider cachimbosa/cachimbosa/spiders/paginas/bengala_spider.py -o /home/sportak/data/bengalas.json
+scrapy runspider cachimbosa/cachimbosa/spiders/paginas/bengala_spider.py -o $HOME/data/bengalas.json
 #sleep 1m
-scrapy runspider cachimbosa/cachimbosa/spiders/paginas/hispacachimba_spider.py -o /home/sportak/data/hispacachimba.json
+scrapy runspider cachimbosa/cachimbosa/spiders/paginas/hispacachimba_spider.py -o $HOME/data/hispacachimba.json
 #sleep 1m
-scrapy runspider cachimbosa/cachimbosa/spiders/paginas/medusa_spider.py -o /home/sportak/data/medusa.json
+scrapy runspider cachimbosa/cachimbosa/spiders/paginas/medusa_spider.py -o $HOME/data/medusa.json
 #sleep 1m
-scrapy runspider cachimbosa/cachimbosa/spiders/paginas/tgs_spider.py -o /home/sportak/data/tgs.json
+scrapy runspider cachimbosa/cachimbosa/spiders/paginas/tgs_spider.py -o $HOME/data/tgs.json
 #sleep 1m
-scrapy runspider cachimbosa/cachimbosa/spiders/paginas/bakkali_spider.py -o /home/sportak/data/bakkali.json
+scrapy runspider cachimbosa/cachimbosa/spiders/paginas/bakkali_spider.py -o $HOME/data/bakkali.json
 #sleep 1m
 
 
@@ -29,7 +29,7 @@ fi
 echo "[Success] scrawl multiple exitoso"
 echo "[INFO] iniciando subida base de datos"
 
-python3 cachimbosa/cachimbosa/scripts/file_exporter.py "10052001Tsonyo"
+python3 cachimbosa/cachimbosa/scripts/file_exporter_develop.py $1
 
 if [ "$?" != "0" ]; then
         echo "[Error] Guardado en base de datos fallado"

@@ -164,7 +164,9 @@ class Bakkali(scrapy.Spider):
             'agotado': agotado,
             'cantidad': cantidad,
             'categorias': categorias,
-            'etiquetas': etiquetas
+            'etiquetas': etiquetas,
+            'colores': [],
+            "specs": [{}]
         }
 
     def removeSpecificWordsFromString(self, string, wordsToDelete):
