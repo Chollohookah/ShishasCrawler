@@ -4,6 +4,7 @@ import re
 import json
 from time import gmtime, strftime
 import unidecode
+from utils import Utils
 
 
 class ZuloShishasPider(scrapy.Spider):
@@ -84,7 +85,7 @@ class ZuloShishasPider(scrapy.Spider):
             contenidoPrincipal.css('div#oosHook::attr(style)'))
         fotosExtraShisha = response.css(
             '#thumbs_list ul li a::attr(href)').getall()
-        descCorta = self.cleanhtml(response.css(
+        descCorta = Utils.cleanhtml(self, response.css(
             '#short_description_content p,strong::text').get())
 
         precioOriginal = contenidoPrincipal.css(
@@ -94,9 +95,9 @@ class ZuloShishasPider(scrapy.Spider):
         itemFinal['fotos'] = fotosExtraShisha
         itemFinal['shortDesc'] = descCorta
         itemFinal['titulo'] = contenidoPrincipal.css('h1.heading::text').get()
-        itemFinal['modelo'] = self.flattenString(self.removeSpecificWordsFromString(
-            contenidoPrincipal.css('h1.heading::text').get(), ['cachimba', 'shisha', itemFinal['tipo']]))
-        itemFinal['marca'] = self.flattenString(self.removeSpecificWordsFromString(contenidoPrincipal.css(
+        itemFinal['modelo'] = Utils.flattenString(self, Utils.removeSpecificWordsFromString(self,
+                                                                                            contenidoPrincipal.css('h1.heading::text').get(), ['cachimba', 'shisha', itemFinal['tipo']]))
+        itemFinal['marca'] = Utils.flattenString(self, Utils.removeSpecificWordsFromString(self, contenidoPrincipal.css(
             'a#product_manufacturer_logo meta::attr(content)').get(), ['cachimba', 'shisha', itemFinal['tipo']]))
         itemFinal['imagen'] = contenidoPrincipal.css(
             'img#bigpic::attr(src)').get()
@@ -153,28 +154,3 @@ class ZuloShishasPider(scrapy.Spider):
         if style == "" or style == None or len(style) == 0:
             return False
         return True
-
-    def cleanhtml(self, raw_html):
-        cleanr = re.compile('<.*?>')
-        cleantext = re.sub(cleanr, '', raw_html)
-        return cleantext
-
-    def removeSpecificWordsFromString(self, string, wordsToDelete):
-        if string is not None:
-            edit_string_as_list = string.lower().split()
-            final_list = [
-                word for word in edit_string_as_list if word not in wordsToDelete]
-            final_string = ' '.join(final_list)
-            return final_string
-        else:
-            return ""
-
-    def flattenString(self, string):
-        string = string.upper()
-        string = string.replace(".", " ")
-        string = string.replace(",", " ")
-        string = string.replace("-", " ")
-        string = string.replace(" ", "")
-        string = string.strip()
-        string = unidecode.unidecode(string)
-        return string

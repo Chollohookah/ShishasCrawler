@@ -3,6 +3,7 @@ import json
 import re
 from time import gmtime, strftime
 import unidecode
+from utils import Utils
 
 
 class MedusaSpider(scrapy.Spider):
@@ -44,7 +45,8 @@ class MedusaSpider(scrapy.Spider):
             indexWhile = indexWhile + 1
 
     def executeDescRequest(self, response, typeItem):
-        itemsUnicos = list(set(response.css('div.products div.col-inner a::attr(href)').getall()))
+        itemsUnicos = list(
+            set(response.css('div.products div.col-inner a::attr(href)').getall()))
         if(len(itemsUnicos) > 0):
             for item in itemsUnicos:
                 peticionShishas = scrapy.Request(response.urljoin(
@@ -117,29 +119,9 @@ class MedusaSpider(scrapy.Spider):
                 'imagen': imagen,
                 'tipo': typeItem,
                 'fotos': mainProduct.css('.product-thumbnails div.col a img::attr(data-src)').getall(),
-                'marca': self.flattenString(self.removeSpecificWordsFromString(marca.lower(), ['cachimba', 'shisha', typeItem])).strip(),
-                'modelo': self.flattenString(self.removeSpecificWordsFromString(titulo.lower(), ['cachimba', 'shisha', typeItem] + marca.split())).strip(),
+                'marca': Utils.flattenString(self, Utils.removeSpecificWordsFromString(self, marca.lower(), ['cachimba', 'shisha', typeItem])).strip(),
+                'modelo': Utils.flattenString(self, Utils.removeSpecificWordsFromString(self, titulo.lower(), ['cachimba', 'shisha', typeItem] + marca.split())).strip(),
                 'agotado': False,
                 'cantidad': cantidad,
                 'categorias': [typeItem],
                 'etiquetas': etiquetas}
-
-    def removeSpecificWordsFromString(self, string, wordsToDelete):
-        if string is not None:
-            edit_string_as_list = string.lower().split()
-            final_list = [
-                word for word in edit_string_as_list if word not in wordsToDelete]
-            final_string = ' '.join(final_list)
-            return final_string
-        else:
-            return ""
-
-    def flattenString(self, string):
-        string = string.upper()
-        string = string.replace(".", " ")
-        string = string.replace(",", " ")
-        string = string.replace("-", " ")
-        string = string.replace(" ", "")
-        string = string.strip()
-        string = unidecode.unidecode(string)
-        return string

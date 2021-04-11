@@ -3,6 +3,7 @@ import json
 import re
 import unidecode
 from time import gmtime, strftime
+from utils import Utils
 
 
 class HispaCachimbas(scrapy.Spider):
@@ -32,7 +33,6 @@ class HispaCachimbas(scrapy.Spider):
             self.metadatosObtenidos = True
 
         indexWhile = 1
-
         while indexWhile < self.PAGINA_MAX:
             if indexWhile == 1:
                 peticionPaginaProducto = scrapy.Request(response.urljoin(
@@ -114,12 +114,17 @@ class HispaCachimbas(scrapy.Spider):
 
         # MARCA
         # TODO Pensar otra manera de pillar la marca, esta a veces falla porque no todas las url tienen 6 "/"
-        marca = self.flattenString(self.removeSpecificWordsFromString(response.css(
-            'meta[property="og:image"]::attr(content)').get().split("/")[6].upper(), ['cachimba', 'shisha']))
+        splittedUrl = response.css(
+            'meta[property="og:image"]::attr(content)').get().split("/")
+
+        indiceCatalog = splittedUrl.index("catalog")
+
+        marca = Utils.flattenString(self, Utils.removeSpecificWordsFromString(
+            self, splittedUrl[(indiceCatalog + 1)].upper(), ['cachimba', 'shisha']))
 
         # MODELO
-        modelo = self.flattenString(self.removeSpecificWordsFromString(
-            titulo.lower(), ['cachimba']+marca.lower().split())).strip()
+        modelo = Utils.flattenString(self, Utils.removeSpecificWordsFromString(self,
+                                                                               titulo.lower(), ['cachimba']+marca.lower().split())).strip()
 
         # PRODUCTO AGOTADO
         agotado = True if (contenido.css(
@@ -154,23 +159,3 @@ class HispaCachimbas(scrapy.Spider):
             'categorias': categorias,
             'etiquetas': etiquetas
         }
-
-    def removeSpecificWordsFromString(self, string, wordsToDelete):
-        if string is not None:
-            edit_string_as_list = string.lower().split()
-            final_list = [
-                word for word in edit_string_as_list if word not in wordsToDelete]
-            final_string = ' '.join(final_list)
-            return final_string
-        else:
-            return ""
-
-    def flattenString(self, string):
-        string = string.upper()
-        string = string.replace(".", " ")
-        string = string.replace(",", " ")
-        string = string.replace("-", " ")
-        string = string.replace(" ", "")
-        string = string.strip()
-        string = unidecode.unidecode(string)
-        return string

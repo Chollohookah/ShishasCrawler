@@ -3,6 +3,7 @@ import json
 import re
 import unidecode
 from time import gmtime, strftime
+from utils import Utils
 
 
 class Bakkali(scrapy.Spider):
@@ -120,13 +121,13 @@ class Bakkali(scrapy.Spider):
             'meta[itemprop="brand"]::attr(content)').get()
 
         # TODO: Hay algunas que no tienen el meta brand, hay que pensar una alternativa
-        marca = self.flattenString(self.removeSpecificWordsFromString(response.css(
+        marca = Utils.flattenString(self, Utils.removeSpecificWordsFromString(self, response.css(
             'meta[itemprop="brand"]::attr(content)').get().upper(), ['cachimba', 'shisha'])) if marca_sin_modificar else typeItem
 
         # TODO: Por qué se juntan todas las palabras del modelo??
         # MODELO
-        modelo = self.flattenString(self.removeSpecificWordsFromString(
-            titulo.lower(), ['cachimba']+marca.lower().split())).strip()
+        modelo = Utils.flattenString(self, Utils.removeSpecificWordsFromString(
+            self, titulo.lower(), ['cachimba']+marca.lower().split())).strip()
 
         # PRODUCTO AGOTADO
         wrapper_nodo = response.css('#product-availability::text').getall()
@@ -168,23 +169,3 @@ class Bakkali(scrapy.Spider):
             'colores': [],
             "specs": [{}]
         }
-
-    def removeSpecificWordsFromString(self, string, wordsToDelete):
-        if string is not None:
-            edit_string_as_list = string.lower().split()
-            final_list = [
-                word for word in edit_string_as_list if word not in wordsToDelete]
-            final_string = ' '.join(final_list)
-            return final_string
-        else:
-            return ""
-
-    def flattenString(self, string):
-        string = string.upper()
-        string = string.replace(".", " ")
-        string = string.replace(",", " ")
-        string = string.replace("-", " ")
-        string = string.replace(" ", "")
-        string = string.strip()
-        string = unidecode.unidecode(string)
-        return string
