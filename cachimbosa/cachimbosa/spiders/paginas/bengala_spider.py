@@ -4,6 +4,7 @@ import json
 import re
 import unidecode
 from time import gmtime, strftime
+from types import SimpleNamespace
 from utils import Utils
 
 
@@ -69,22 +70,10 @@ class BengalaShishaSpider(scrapy.Spider):
         if (len(shishas) > 0):
             for shisha in shishas:
                 thumbContainer = shisha.css('div.thumbnail-container')
-                productDesc = shisha.css('div.product-description')
-                precioRegular = productDesc.css('span.regular-price::text')
-                precioProducto = productDesc.css(
-                    'span.product-price::attr(content)')
-                divisa = productDesc.css(
-                    'span.product-price::text').get().split()[1]
-
-                if precioRegular.get() is not None:
-                    extraccionPrecioRegular = precioRegular.get().split()[0]
+                productDesc = shisha.css('div#col-product-info')
 
                 itemFinal = {
                     'linkProducto': thumbContainer.css('a::attr(href)').get(),
-                    'titulo': productDesc.css('h3.product-title a::text').get(),
-                    'precioOriginal': extraccionPrecioRegular if len(precioRegular) > 0 else precioProducto.get(),
-                    'precioRebajado': precioProducto.get() if len(precioRegular) > 0 else None,
-                    'divisa': divisa,
                     'tipo': typeItem,
                     'categorias': [typeItem]
                 }
@@ -107,14 +96,29 @@ class BengalaShishaSpider(scrapy.Spider):
             if match:
                 colores.append(color)
 
+        jsonData = json.loads(response.css(
+            '#product-details::attr(data-product)').get())
+
+        hayReduction = jsonData['reduction'] != 0
+
+        precioRegular = jsonData['price_without_reduction'] if(
+            hayReduction) else jsonData['price_amount']
+
+        precioProducto = jsonData['price_amount'] if(
+            hayReduction) else None
+        divisa = jsonData['price'][-1]
+
+        itemFinal['titulo'] = jsonData['name']
+        itemFinal['precioOriginal'] = precioRegular
+        itemFinal['precioRebajado'] = precioProducto
+        itemFinal['divisa'] = divisa
+
         itemFinal['colores'] = colores
+        itemFinal['specs'] = self.obtainSpecs(jsonData['features'])
 
-        itemFinal['shortDesc'] = Utils.cleanhtml(self, response.css(
-            'div[itemprop="description"] p,strong::text').get())
+        itemFinal['shortDesc'] = Utils.cleanhtml(self, jsonData['description_short'])
 
-        itemFinal['fotos'] = response.css(
-            '#product-images-thumbs div.thumb-container img::attr(src)').getall()
-        itemFinal['specs'] = self.obtenerEspecificaciones(response)
+        itemFinal['fotos'] = self.obtainFotos(jsonData['images'])
 
         itemFinal['marca'] = Utils.flattenString(self, Utils.removeSpecificWordsFromString(self, contentWrapper.css(
             'div#product-details-tab div#product-details meta::attr(content)').get(), ['cachimba', 'shisha']))
@@ -122,20 +126,21 @@ class BengalaShishaSpider(scrapy.Spider):
                                                                                             (itemFinal['titulo'] if itemFinal['titulo'] is not None else '').lower(), ['cachimba', 'shisha', (itemFinal['marca'] if itemFinal['marca'] is not None else '').lower()]))
         itemFinal['agotado'] = True if len(contentWrapper.css(
             'button.add-to-cart::attr(disabled)')) > 0 else False
-        itemFinal['cantidad'] = None
+        itemFinal['cantidad'] = jsonData['quantity']
         itemFinal['etiquetas'] = contentWrapper.css(
             'div#content-wrapper div.product-description div.rte-content strong::text').getall()
         yield itemFinal
 
-    def obtenerEspecificaciones(self, response):
-        objEspecificaciones = {}
-        keysSpecs = response.css('section.product-features dt::text').getall()
-        valueSpecs = response.css('section.product-features dd::text').getall()
-        for index, item in enumerate(keysSpecs):
-            if item == 'Tamaño':
-                objEspecificaciones['tamanyo'] = valueSpecs[index]
-            elif item == 'Altura':
-                objEspecificaciones['altura'] = valueSpecs[index]
-            elif item == 'Material':
-                objEspecificaciones['material'] = valueSpecs[index]
-        return objEspecificaciones,
+    def obtainSpecs(self, arraySpecs):
+        res = []
+        for spec in arraySpecs:
+            obj = {}
+            obj[spec['name']] = spec['value']
+            res.append(obj)
+        return res
+
+    def obtainFotos(self, arrayImages):
+        res = []
+        for image in arrayImages:
+            res.append(image['bySize']['large_default']['url'])
+        return res

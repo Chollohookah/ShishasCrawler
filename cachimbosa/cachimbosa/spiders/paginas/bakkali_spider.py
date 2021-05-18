@@ -145,7 +145,7 @@ class Bakkali(scrapy.Spider):
         categorias = [typeItem]
 
         # ETIQUETAS
-        etiquetas = ''
+        etiquetas = []
 
         # TIPO
         tipo = typeItem
