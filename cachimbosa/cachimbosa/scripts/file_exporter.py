@@ -20,12 +20,13 @@ databaseChollohookaPROD = client['chollohooka-PROD']
 #hookasCol = databaseChollohooka["items"]
 #blocksColection = databaseChollohooka['bloques']
 
-listaFicheros = ['/home/ubuntu/data/bengalas.json', '/home/ubuntu/data/hispacachimba.json',
+listaFicheros = ['/home/ubuntu/data/bengalas.json', '/home/ubuntu/data/hispacachimba.json', '/home/ubuntu/data/bakkali.json',
                  '/home/ubuntu/data/medusa.json', '/home/ubuntu/data/tgs.json', '/home/ubuntu/data/zuloshisha.json']
 
 keysPermitidasParaSerNulas = ["preciorebajado", "cantidad", "shortdesc"]
 
 basesDeDatos = ["chollohooka", "chollohooka-PROD"]
+
 
 def isAllowedToBeNull(key):
     return key.lower() in keysPermitidasParaSerNulas
@@ -92,11 +93,14 @@ for nombreFichero in listaFicheros:
                     for cachimba in objJSON:
                         cachimba['siteId'] = _id
                     client[database]["items"].insert_many(objJSON)
-                    block['statuses'].update({infoPagina['name'].lower(): True})
-                    client[database]["bloques"].update({"_id": objetoIds[database]}, block)
+                    block['statuses'].update(
+                        {infoPagina['name'].lower(): True})
+                    client[database]["bloques"].update(
+                        {"_id": objetoIds[database]}, block)
             else:
                 block['statuses'].update({infoPagina['name'].lower(): False})
-                client[database]["bloques"].update({"_id": objetoIds[database]}, block)
+                client[database]["bloques"].update(
+                    {"_id": objetoIds[database]}, block)
 
     except Exception as e:
         print(e)

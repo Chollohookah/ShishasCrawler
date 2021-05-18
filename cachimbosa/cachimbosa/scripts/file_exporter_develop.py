@@ -3,6 +3,7 @@ import pymongo
 import sys
 from datetime import datetime
 import random
+from os.path import expanduser
 
 if len(sys.argv) == 1:
     env_var = input('Please enter database password \n')
@@ -14,17 +15,13 @@ client = pymongo.MongoClient(
 # client.drop_database('chollohooka')
 databaseChollohooka = client['chollohooka']
 databaseChollohookaPROD = client['chollohooka-PROD']
+home = expanduser("~")
+basePath = home + '/data/'
+listaFicheros = ['medusa.json', 'tgs.json', "bengalas.json",
+                 'hispacachimba.json', 'zuloshisha.json', "bakkali.json"]
 
-#erroresDeMinado = databaseChollohooka["errores"]
-#minadasCol = databaseChollohooka["paginas"]
-#hookasCol = databaseChollohooka["items"]
-#blocksColection = databaseChollohooka['bloques']
-
-# listaFicheros = ['/home/sportak/data/bengalas.json', '/home/sportak/data/hispacachimba.json',
-# '/home/sportak/data/medusa.json', '/home/sportak/data/tgs.json', '/home/sportak/data/zuloshisha.json']
-listaFicheros = ['/home/sportak/data/medusa.json', '/home/sportak/data/tgs.json',
-                 '/home/sportak/data/bengalas.json', '/home/sportak/data/hispacachimba.json', '/home/sportak/data/zuloshisha.json']
 keysPermitidasParaSerNulas = ["preciorebajado", "cantidad", "shortdesc"]
+
 basesDeDatos = ["chollohooka"]
 
 
@@ -67,7 +64,7 @@ for database in basesDeDatos:
 
 for nombreFichero in listaFicheros:
     try:
-        with open(nombreFichero, 'r') as ficheroJson:
+        with open((basePath + nombreFichero), 'r') as ficheroJson:
             nombrePagina = nombreFichero.split(".")[0]
             data = ficheroJson.read()
             objJSON = json.loads(data)
